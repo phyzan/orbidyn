@@ -1,0 +1,27 @@
+.cache
+__pycache__/
+.venv
+build/
+
+# CMake artifacts
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+**/Makefile
+!Makefile
+!CMakeLists.txt
+
+# Compiled files
+*.so
+*.o
+*.a
+*.dylib
+
+# IDE
+.vscode/
+.idea/
+
+# Python
+*.egg-info/
+dist/
+*.pyc
