@@ -1,0 +1,29 @@
+[build-system]
+requires = ["scikit-build-core>=0.10"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "orbidyn"
+version = "0.1.0"
+description = "Python bindings for the odecraft ODE solver library"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy",
+    "numiphy @ git+https://github.com/phyzan/numiphy.git@9087510869f877e290f78c2424d68331e22e7420",
+    # Must match external/pybind11 (vendored submodule) exactly: JIT-compiled user code
+    # (numiphy's compile_tools.py, via pybind11.get_include()) links against this pip
+    # package's headers, while orbidyn's precompiled extensions are built against the
+    # submodule. A pybind11 version mismatch between the two breaks cross-module type
+    # identity (e.g. passing a RegularScalarField into JIT-compiled code fails at runtime).
+    "pybind11==3.1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[tool.scikit-build]
+cmake.source-dir = "."
+cmake.build-type = "Release"
+build-dir = "build"
+wheel.packages = ["python/orbidyn"]
