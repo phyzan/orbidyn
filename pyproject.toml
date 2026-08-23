@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.20.0",
     "scipy",
-    "numiphy @ git+https://github.com/phyzan/numiphy.git@9087510869f877e290f78c2424d68331e22e7420",
+    "numiphy @ git+https://github.com/phyzan/numiphy.git@600d93b326f57a0bfb0641b19514ae5c90fd125a",
     # Must match external/pybind11 (vendored submodule) exactly: JIT-compiled user code
     # (numiphy's compile_tools.py, via pybind11.get_include()) links against this pip
     # package's headers, while orbidyn's precompiled extensions are built against the
@@ -25,5 +25,21 @@ dev = ["pytest>=7.0"]
 [tool.scikit-build]
 cmake.source-dir = "."
 cmake.build-type = "Release"
-build-dir = "build"
+# Keyed by wheel tag so building several interpreters in a row (as cibuildwheel does)
+# never reuses a CMakeCache that pinned a different Python_EXECUTABLE.
+build-dir = "build/{wheel_tag}"
 wheel.packages = ["python/orbidyn"]
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
+# musl is untested here; the C++20 sources need a recent libstdc++ toolchain.
+skip = "*-musllinux_*"
+archs = ["x86_64"]
+build-frontend = "build"
+test-command = "python -c \"import orbidyn; print(orbidyn.__file__)\""
+
+[tool.cibuildwheel.linux]
+# AlmaLinux 8 base: GCC 14 devtoolset, glibc 2.28 - needed for the C++20 sources.
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = "dnf install -y mpfr-devel gmp-devel"
+environment = { CMAKE_BUILD_PARALLEL_LEVEL = "4" }
