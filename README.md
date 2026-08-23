@@ -1,6 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/C%2B%2B-20-blue?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++20">
-  <img src="https://img.shields.io/badge/Python-3.12%2B-yellow?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.12+">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-yellow?style=for-the-badge&logo=python&logoColor=white" alt="Python 3.10+">
   <img src="https://img.shields.io/badge/License-MIT-purple?style=for-the-badge" alt="MIT License">
 </p>
 
