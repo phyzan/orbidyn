@@ -26,7 +26,7 @@ PyEvent::PyEvent(std::string name, py::object mask, bool delay_mask, const std::
     this->is_lowlevel_ = true;
     this->is_masked_ = true;
     if (py::isinstance<py::capsule>(mask)){
-        this->mask_ = dispatch_scalar_type<RawPyRhs_t>(getScalarType(scalar_type), [&]<typename T>(){
+        this->mask_ = dispatch_scalar_type<RawPyRhs_t>(getScalarTypefromStr(scalar_type), [&]<typename T>(){
             return open_capsule<raw_pyrhs_t<T>>(mask);
         });
         this->requires_check_sizes_ = true;
@@ -69,7 +69,7 @@ void PyEvent::check_sizes(size_t Nsys, size_t Nargs) const{
 
 PyPrecEvent::PyPrecEvent(std::string name, py::object when, int dir, py::object mask, bool delay_mask, py::object event_tol, const std::string& scalar_type, size_t Nsys, size_t Nargs) : PyEvent(std::move(name), std::move(mask), delay_mask, scalar_type, Nsys, Nargs), dir_(sgn(dir)), event_tol_(std::move(event_tol)){
     if (py::isinstance<py::capsule>(when)){
-        this->obj_fun_ = dispatch_scalar_type<RawPyObjFun_t>(getScalarType(scalar_type), [&]<typename T>(){
+        this->obj_fun_ = dispatch_scalar_type<RawPyObjFun_t>(getScalarTypefromStr(scalar_type), [&]<typename T>(){
             return open_capsule<raw_pyobjfun_t<T>>(when);
         });
         this->requires_check_sizes_ = true;

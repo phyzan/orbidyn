@@ -21,7 +21,7 @@ py::class_<ode::EventOptions>(m, "EventOpt")
 py::class_<PyEvent>(m, "Event")
     .def_property_readonly("name", &PyEvent::name)
     .def_property_readonly("mask_delayed", &PyEvent::mask_delayed)
-    .def_property_readonly("scalar_type", [](const PyEvent& self){return getScalarType(self.scalar_type);});
+    .def_property_readonly("scalar_type", [](const PyEvent& self){return getScalarTypeName(self.scalar_type);});
 
 py::class_<PyPrecEvent, PyEvent>(m, "PreciseEvent")
     .def(py::init<std::string, py::object, int, py::object, bool, py::object, std::string, size_t, size_t>(),

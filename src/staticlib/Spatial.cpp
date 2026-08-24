@@ -110,7 +110,6 @@ PyRegGridInterp::CLS PyRegGridInterp::init(const py::array_t<double>& values, co
     if (coord_axis_first){
         // current shape is for e.g. 2D: (nx, ny, ...), where ... is any shape
         // we need to convert this to (n_points, ...)
-        // github copilot complete this
         std::vector<int> new_shape(values_c.ndim() - grid.size()+1, 1); //fill with 1's initially
         int n_points = rgi::detail::get_point_count(grid);
         new_shape[0] = n_points;
