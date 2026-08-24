@@ -6,9 +6,6 @@
 #include <odecraft/Core/Events.hpp>
 #include "../Dispatcher.hpp"
 
-
-#define ORBIDYN_SCALARS float, double, long double, mpreal_t
-
 namespace ode::python {
 
 
@@ -32,29 +29,13 @@ using RawPyRhs_t    = variant_raw_rhs_t<ORBIDYN_SCALARS>; // (T* out, const T& t
 using RawPyObjFun_t = variant_raw_pyobjfun_t<ORBIDYN_SCALARS>; // (const T& t, const T* q, const T* args) -> T
 
 
-template<typename ReturnType, typename Callable, typename... Args>
-inline ReturnType dispatch_scalar_type(ScalarType scalar_type, Callable&& callable, Args&&... args){
-    switch (scalar_type){
-        case ScalarType::Float:
-            return callable.template operator()<float>(std::forward<Args>(args)...);
-        case ScalarType::Double:
-            return callable.template operator()<double>(std::forward<Args>(args)...);
-        case ScalarType::LongDouble:
-            return callable.template operator()<long double>(std::forward<Args>(args)...);
-        case ScalarType::MPReal:
-            return callable.template operator()<mpreal_t>(std::forward<Args>(args)...);
-        default:
-            throw std::runtime_error("Unknown scalar type");
-    }
-}
-
 
 // Generic over any std::variant<pbox::owner<Class<T>>...> (solvers, odes, results alike),
 // so it lives here rather than next to any one of them.
 template<template<typename> typename Class, typename... T>
 inline ScalarType visit_scalar_type(const std::variant<pbox::owner<Class<T>>...>& obj){
     return std::visit([]<typename A>(const pbox::owner<Class<A>>&){
-        return get_scalar_type<A>();
+        return getScalarType<A>();
     }, obj);
 }
 

@@ -1,0 +1,41 @@
+name: Build wheels
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  wheels:
+    name: manylinux x86_64
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # odecraft, pybind11 and their own nested submodules are all part of the build.
+          submodules: recursive
+
+      - uses: pypa/cibuildwheel@v2.21.3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-manylinux-x86_64
+          path: ./wheelhouse/*.whl
+
+  release:
+    name: Attach wheels to the release
+    needs: wheels
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: wheelhouse
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: wheelhouse/*.whl

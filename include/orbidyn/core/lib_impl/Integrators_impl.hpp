@@ -19,8 +19,8 @@ namespace ode::python{
 template<typename T, bool force_jac, typename Callable>
 bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object& py_jac, const pyshape_t& state_shape, const py::iterable& py_args, const py::iterable& py_events){
     // passes a copy of the final form of data to the OdeData object. As a result, the referenced data object should not be modified for the entire lifetime of the solver constructed with its copy.
-    ScalarType scalar_type = get_scalar_type<T>();
-    std::string scalar_type_str = (std::string)getScalarType(scalar_type);
+    constexpr ScalarType scalar_type = getScalarType<T>();
+    std::string scalar_type_str = getScalarTypeName<T>();
     py::tuple tuple_args = py::tuple(py_args);
     size_t nsys = prod(state_shape);
     
@@ -37,7 +37,7 @@ bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object
             //safe approach
             auto& func_wrapper = py_rhs.cast<PyFuncWrapper&>();
             if (func_wrapper.scalar_type != scalar_type){
-                throw py::value_error("The scalar type of the provided ode function (" + std::string(getScalarType(func_wrapper.scalar_type)) + ") does not match the scalar type of the solver (" + scalar_type_str + ")");
+                throw py::value_error("The scalar type of the provided ode function (" + std::string(getScalarTypeName(func_wrapper.scalar_type)) + ") does not match the scalar type of the solver (" + scalar_type_str + ")");
             } else if (func_wrapper.n_sys != nsys){
                 throw py::value_error("The array size of the initial conditions differs from the ode system size");
             } else if (func_wrapper.n_args != args.size()){
@@ -59,7 +59,7 @@ bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object
             //safe approach
             auto& jac_wrapper = py_jac.cast<PyFuncWrapper&>();
             if (jac_wrapper.scalar_type != scalar_type){
-                throw py::value_error("The scalar type of the provided jacobian (" + std::string(getScalarType(jac_wrapper.scalar_type)) + ") does not match the scalar type of the solver (" + scalar_type_str + ")");
+                throw py::value_error("The scalar type of the provided jacobian (" + std::string(getScalarTypeName(jac_wrapper.scalar_type)) + ") does not match the scalar type of the solver (" + scalar_type_str + ")");
             } else if (jac_wrapper.n_sys != nsys){
                 throw py::value_error("The array size of the initial conditions differs from the ode system size that applied in the provided jacobian");
             } else if (jac_wrapper.n_args != args.size()){

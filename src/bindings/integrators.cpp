@@ -39,7 +39,7 @@ py::class_<PyFuncWrapper>(m, "LowLevelFunction")
         py::arg("Nargs"),
         py::arg("scalar_type")="double")
     .def("__call__", &PyFuncWrapper::call, py::arg("t"), py::arg("q"))
-    .def_property_readonly("scalar_type", [](const PyFuncWrapper& self){return getScalarType(self.scalar_type);});
+    .def_property_readonly("scalar_type", [](const PyFuncWrapper& self){return getScalarTypeName(self.scalar_type);});
 
 
 // ================= Main abstract interface classes ==========================
@@ -68,7 +68,7 @@ py::class_<PyConstSolver>(m, "OdeSolverView")
     .def("timeit_rhs", &PyConstSolver::timeit_rhs, py::arg("t"), py::arg("q"))
     .def("timeit_jac", &PyConstSolver::timeit_jac, py::arg("t"), py::arg("q"))
     .def("copy", &PyConstSolver::copy)
-    .def_property_readonly("scalar_type", [](const PyConstSolver& self){return getScalarType(self.scalar_type);});
+    .def_property_readonly("scalar_type", [](const PyConstSolver& self){return getScalarTypeName(self.scalar_type);});
 
 py::class_<PySolver, PyConstSolver>(m, "OdeSolver")
     .def("advance", &PySolver::advance)

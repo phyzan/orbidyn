@@ -48,7 +48,7 @@ py::object PyFuncWrapper::call(const py::object& t, const py::iterable& py_q, co
 
 
 DtypeDispatcher::DtypeDispatcher(const std::string& dtype_){
-    this->scalar_type = getScalarType(dtype_);
+    this->scalar_type = getScalarTypefromStr(dtype_);
 }
 
 DtypeDispatcher::DtypeDispatcher(ScalarType dtype_) : scalar_type(dtype_) {}
