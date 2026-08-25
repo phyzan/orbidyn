@@ -17,7 +17,7 @@ PyODE::PyODE(const py::object& f, const py::object& t0, const py::iterable& py_q
     ORBIDYN_MODIFY_ODE_VARIANT(
         this->is_lowlevel = init_ode_data<T, false>([&](auto ode_obj, EventList<T>&& events){
             std::vector<T> q0 = to_vector<T>(py_q0);
-            ode_ptr = pbox::make_box<ODE<T>>(std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? inf<T>() : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events), getIntegrator(method));
+            ode_ptr = pbox::make_box<ODE<T>>(std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events), getIntegrator(method));
         }, f, jacobian, this->state_dims, py_args, py_events);
     )
 }

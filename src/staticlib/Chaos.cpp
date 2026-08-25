@@ -32,7 +32,7 @@ PyVarSolver::PyVarSolver(const py::object& f, const py::object& jac, const py::o
             // ----------------------------------------------------------
             pyshape_t main_shape_state = {py::ssize_t(nsys)};
             this->is_lowlevel = init_ode_data<T, true>([&](auto ode_obj, EventList<T>&& events){
-                this->integrator = ode::chaos::make_variational_solver<UtilPolicy::RichVirtual>(getIntegrator(method), std::move(ode_obj), t0.cast<T>(), View1D{vector.data(), nsys}, View1D{vector.data()+nsys, nsys}, period.cast<T>(), rtol.cast<T>(), atol.cast<T>(), min_step.cast<T>(), (max_step.is_none() ? inf<T>() : max_step.cast<T>()), stepsize.cast<T>(), dir, std::move(events));
+                this->integrator = ode::chaos::make_variational_solver<UtilPolicy::RichVirtual>(getIntegrator(method), std::move(ode_obj), t0.cast<T>(), View1D{vector.data(), nsys}, View1D{vector.data()+nsys, nsys}, period.cast<T>(), rtol.cast<T>(), atol.cast<T>(), min_step.cast<T>(), (max_step.is_none() ? 0 : max_step.cast<T>()), stepsize.cast<T>(), dir, std::move(events));
             }, f, jac, main_shape_state, py_args, py_events);
         }
     );
@@ -97,7 +97,7 @@ PyVarODE::PyVarODE(const py::object& f, const py::object& jac, const py::object&
             this->state_dims = std::move(full_shape_state);
             this->is_lowlevel = init_ode_data<T, true>([&](auto ode_obj, EventList<T>&& events){
                 this->ode = pbox::make_box<::ode::chaos::VariationalODE<T, 0>>(
-                    std::move(ode_obj), py::cast<T>(t0), View1D{vector.data(), nsys}, View1D{vector.data()+nsys, nsys}, py::cast<T>(period), py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? inf<T>() : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events), getIntegrator(method)
+                    std::move(ode_obj), py::cast<T>(t0), View1D{vector.data(), nsys}, View1D{vector.data()+nsys, nsys}, py::cast<T>(period), py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events), getIntegrator(method)
                 );
                 }, f, jac, main_shape_state, py_args, py_events
             );

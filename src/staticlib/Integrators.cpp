@@ -15,7 +15,7 @@ PyConstSolver::PyConstSolver(const py::object& f, const py::object& t0, const py
     dispatch_scalar_type<void>(this->scalar_type, [&]<typename T>(){
         this->is_lowlevel = init_ode_data<T, false>([&](auto ode_obj, EventList<T>&& events){
             std::vector<T> q0 = to_vector<T>(py_q0);
-            this->integrator = make_solver<UtilPolicy::RichVirtual>(getIntegrator(method), std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? inf<T>() : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events));
+            this->integrator = make_solver<UtilPolicy::RichVirtual>(getIntegrator(method), std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events));
         }, f, jac, shape_of(py_q0), py_args, py_events);
     });
 }
@@ -355,14 +355,7 @@ bool PySolver::set_ics(const py::object& t0, const py::iterable& py_q0, const py
     )
 }
 
-bool PySolver::resume() {
-    return ORBIDYN_MODIFY_SOLVER_VARIANT(
-        return solver->do_resume();
-    )
-}
-
-void PySolver::stop(const py::str& reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_stop(reason); ) }
-void PySolver::kill(const py::str& reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(reason); ) }
+void PySolver::kill(py::str reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(std::move(reason)); ) }
 
 //===========================================================================================
 //                                      Additional functions

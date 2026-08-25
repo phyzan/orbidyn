@@ -451,9 +451,7 @@ class OdeSolver(OdeSolverView):
         -------
         bool
             True if the solver successfully advanced. False if the solver could not
-            advance further (e.g., divergence detected, validation failure, or solver
-            stopped by an event/user). When False, a diagnostic message is printed
-            explaining why advancement failed.
+            advance further.
         """
         ...
 
@@ -524,33 +522,6 @@ class OdeSolver(OdeSolverView):
 
         Restores the solver to (t0, q0) with all internal state reset.
         The solver is ready to begin integration again from the start.
-        """
-        ...
-
-    def resume(self)->bool:
-        """
-        Resume the solver after being stopped.
-
-        If the solver was previously halted due to an event or user stop,
-        this method allows continuation of integration from the current state.
-
-        Returns
-        -------
-        bool
-            True if the solver was successfully resumed.
-            False if the solver is not in a stoppable state (e.g., dead).
-            If False, call message to see the reason.
-        """
-        ...
-
-    def stop(self, reason: str)->None:
-        """
-        Stops the solver, preventing any further advancement unless resume() is called.
-
-        Parameters
-        ----------
-        reason : str
-            Message to store as the solver's status.
         """
         ...
 
