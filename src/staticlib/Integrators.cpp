@@ -355,7 +355,7 @@ bool PySolver::set_ics(const py::object& t0, const py::iterable& py_q0, const py
     )
 }
 
-void PySolver::kill(py::str reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(std::move(reason)); ) }
+void PySolver::kill(std::string reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(std::move(reason)); ) }
 
 //===========================================================================================
 //                                      Additional functions
