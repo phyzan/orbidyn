@@ -77,8 +77,6 @@ py::class_<PySolver, PyConstSolver>(m, "OdeSolver")
     .def("advance_until", &PySolver::advance_until, py::arg("t"), py::arg("observer")=py::none(), py::arg("extra_steps")=py::none())
     .def("reset", &PySolver::reset)
     .def("set_ics", &PySolver::set_ics, py::arg("t0"), py::arg("q0"), py::arg("stepsize")=0, py::arg("direction")=0)
-    .def("resume", &PySolver::resume)
-    .def("stop", &PySolver::stop, py::arg("reason"))
     .def("kill", &PySolver::kill, py::arg("reason"));
 
 // ================= Solver with exposed constructor to override in Python ==========================

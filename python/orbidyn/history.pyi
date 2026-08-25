@@ -62,7 +62,7 @@ class OdeResult:
         Returns
         -------
         bool
-            True if integration stopped due to divergence.
+            True if integration stopped due to encountering NaNs or Infs in the solution.
         """
         ...
 

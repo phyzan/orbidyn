@@ -78,7 +78,7 @@ py::object PyVecField::py_streamline(const CLS& self, const py::array_t<double>&
 
     
     try{
-        double max_step_val = (max_step.is_none() ? inf<double>() : max_step.cast<double>());
+        double max_step_val = (max_step.is_none() ? 0 : max_step.cast<double>());
         pbox::Box<OdeResult<double>> result = pbox::make_box<OdeResult<double>>();
         if (t_eval.is_none()){
             result = self.streamline(q0_c.data(), length, rtol, atol, min_step, max_step_val, stepsize, direction, getIntegrator(method), normalized);
@@ -103,7 +103,7 @@ py::object PyVecField::py_streamline_ode(const CLS& self, const py::array_t<doub
 
     auto q0_c = py::array_t<double, py::array::c_style | py::array::forcecast>(q0);
     check_coords(self, q0_c.data());
-    pbox::Box<ODE<double>> ode = self.get_streamline_ode(q0_c.data(), rtol, atol, min_step, max_step.is_none() ? inf<double>() : max_step.cast<double>(), stepsize, direction, getIntegrator(method), normalized);
+    pbox::Box<ODE<double>> ode = self.get_streamline_ode(q0_c.data(), rtol, atol, min_step, max_step.is_none() ? 0 : max_step.cast<double>(), stepsize, direction, getIntegrator(method), normalized);
 
     pyshape_t state_shape = shape_of(q0);
     return py::cast(PyODE(std::move(ode), state_shape, true));
@@ -158,7 +158,7 @@ py::object PyRegVecField::py_streamplot_data(const CLS& self, double max_length,
         throw py::value_error("Stepsize must be non-negative");
     }
 
-    std::vector<Array2D<double, 0, 0>> streamlines = self.streamplot_data(max_length, ds, size_t(density), rtol, atol, min_step, max_step.is_none() ? inf<double>() : max_step.cast<double>(), stepsize, getIntegrator(method));
+    std::vector<Array2D<double, 0, 0>> streamlines = self.streamplot_data(max_length, ds, size_t(density), rtol, atol, min_step, max_step.is_none() ? 0 : max_step.cast<double>(), stepsize, getIntegrator(method));
     py::list result;
     for (const Array2D<double, 0, 0>& line : streamlines){
         result.append(py::cast(line));
