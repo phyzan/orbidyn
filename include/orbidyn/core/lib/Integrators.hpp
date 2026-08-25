@@ -106,7 +106,7 @@ struct PySolver : public PyConstSolver {
 
     bool                set_ics(const py::object& t0, const py::iterable& py_q0, const py::object& dt, int direction);
 
-    void                kill(py::str reason);   
+    void                kill(std::string reason);   
 };
 
 
