@@ -320,15 +320,16 @@ py::object PySolver::advance_until(const py::object& time, const py::object& obs
         } catch (const py::cast_error&){
             throw py::value_error("The observer parameter must be a function that takes no arguments");
         }
-        std::function<bool(const T&, const T*, const T*)> obs = [py_obs, this](const T&, const T*, const T*) -> bool {
+        observer_t<T> obs = [py_obs, this](const T&, const T*, const T*) -> bool {
             py::object result = py_obs(this);
             if (result.is_none()) return true;
             return result.cast<bool>();
         };
+        
         if (extra_steps.is_none()){
-            return py::cast(solver->do_observe_until(time.cast<T>(), obs));
+            return py::cast(solver->do_advance_until(time.cast<T>(), obs));
         }else{
-            return py::cast(solver->do_observe_until(time.cast<T>(), obs, View1D<T>(steps.data(), steps.size())));
+            return py::cast(solver->do_advance_until(time.cast<T>(), obs, View1D<T>(steps.data(), steps.size())));
         }
     )
 }
