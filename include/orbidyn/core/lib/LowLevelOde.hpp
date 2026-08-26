@@ -31,7 +31,7 @@ public:
     PyODE(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jacobian, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const py::str& method, const std::string& scalar_type);
 
     template<typename T, hasRhsFunc<T> OdeType>
-    PyODE(OdeType ode, T t0, View1D<T> q0, T rtol, T atol, T min_step, T max_step, T stepsize, int dir, EventList<T> events, Integrator method);
+    PyODE(OdeType ode, T t0, View1D<T> q0, T rtol, T atol, T min_step, T max_step, T stepsize, int dir, EventList<T> events, Stepper method);
 
     PyODE(ode_t ode_owner, pyshape_t state_shape, bool ode_is_lowlevel);
 

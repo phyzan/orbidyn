@@ -166,15 +166,15 @@ py::object PyODE::solver_copy() const{
         pbox::Box<OdeRichSolver<T>> rich_clone = std::unique_ptr<OdeRichSolver<T>>(static_cast<OdeRichSolver<T>*>(solver_clone.release()));
 
         switch (ode_ptr->solver()->get_method()){
-            case Integrator::RK45:
+            case Stepper::RK45:
                 return py::cast(PyRK45(std::move(rich_clone), this->is_lowlevel));
-            case Integrator::DOP853:
+            case Stepper::DOP853:
                 return py::cast(PyDOP853(std::move(rich_clone), this->is_lowlevel));
-            case Integrator::RK23:
+            case Stepper::RK23:
                 return py::cast(PyRK23(std::move(rich_clone), this->is_lowlevel));
-            case Integrator::BDF:
+            case Stepper::BDF:
                 return py::cast(PyBDF(std::move(rich_clone), this->is_lowlevel));
-            case Integrator::RK4:
+            case Stepper::RK4:
                 return py::cast(PyRK4(std::move(rich_clone), this->is_lowlevel));
             default:
                 throw py::value_error("Unregistered solver!");

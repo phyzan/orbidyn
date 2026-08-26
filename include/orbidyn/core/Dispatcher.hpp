@@ -100,40 +100,40 @@ inline constexpr const char* getScalarTypeName(ScalarType st){
     });
 }
 
-// Integrator -> string
-inline const char* integrator_name(Integrator method){
+// Stepper -> string
+inline const char* integrator_name(Stepper method){
     
     switch (method){
-        case Integrator::Euler: return "Euler";
-        case Integrator::RK4: return "RK4";
-        case Integrator::RK23: return "RK23";
-        case Integrator::RK45: return "RK45";
-        case Integrator::DOP853: return "DOP853";
-        case Integrator::BDF: return "BDF";
+        case Stepper::Euler: return "Euler";
+        case Stepper::RK4: return "RK4";
+        case Stepper::RK23: return "RK23";
+        case Stepper::RK45: return "RK45";
+        case Stepper::DOP853: return "DOP853";
+        case Stepper::BDF: return "BDF";
         default: throw std::runtime_error("Unknown integrator enum value");
     }
 }
 
-// string -> Integrator
-inline Integrator getIntegrator(const char* name){
+// string -> Stepper
+inline Stepper getIntegrator(const char* name){
     if (strcmp(name, "Euler") == 0){
-        return Integrator::Euler;
+        return Stepper::Euler;
     } else if (strcmp(name, "RK4") == 0){
-        return Integrator::RK4;
+        return Stepper::RK4;
     } else if (strcmp(name, "RK23") == 0){
-        return Integrator::RK23;
+        return Stepper::RK23;
     } else if (strcmp(name, "RK45") == 0){
-        return Integrator::RK45;
+        return Stepper::RK45;
     } else if (strcmp(name, "DOP853") == 0){
-        return Integrator::DOP853;
+        return Stepper::DOP853;
     } else if (strcmp(name, "BDF") == 0){
-        return Integrator::BDF;
+        return Stepper::BDF;
     } else {
         throw std::runtime_error("Unknown integrator name");
     }
 }
 
-inline Integrator getIntegrator(const std::string& name){
+inline Stepper getIntegrator(const std::string& name){
     return getIntegrator(name.c_str());
 }
 

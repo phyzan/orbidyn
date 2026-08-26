@@ -10,7 +10,7 @@
 namespace ode::python {
 
 template<typename T, hasRhsFunc<T> OdeType>
-PyODE::PyODE(OdeType ode, T t0, View1D<T> q0, T rtol, T atol, T min_step, T max_step, T stepsize, int dir, EventList<T> events, Integrator method) : DtypeDispatcher(getScalarType<T>()){
+PyODE::PyODE(OdeType ode, T t0, View1D<T> q0, T rtol, T atol, T min_step, T max_step, T stepsize, int dir, EventList<T> events, Stepper method) : DtypeDispatcher(getScalarType<T>()){
     this->is_lowlevel = true;
     this->state_dims = {py::ssize_t(q0.size())};
 
