@@ -49,8 +49,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # clangd looks for the database next to the source root or in <root>/build/, never in
 # build/{wheel_tag}/ where scikit-build-core puts it (see build-dir in pyproject.toml).
-file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
-     "${CMAKE_SOURCE_DIR}/compile_commands.json" SYMBOLIC)
+# Skipped when vendored via add_subdirectory(), so it can't clobber a parent project's link.
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    file(CREATE_LINK "${CMAKE_BINARY_DIR}/compile_commands.json"
+         "${CMAKE_SOURCE_DIR}/compile_commands.json" SYMBOLIC)
+endif()
 
 find_package(OpenMP)
 

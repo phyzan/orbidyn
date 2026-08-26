@@ -13,9 +13,9 @@
 ---
 
 
-# Overview
+# **OrbiDyn**
 
-OrbiDyn is a Python package that provides high-performance Ordinary Differential Equation (ODE) solvers by compiling C++ code from [OdeCraft](https://github.com/phyzan/odecraft) and exposing it through a Python interface using [pybind11](https://github.com/pybind/pybind11).
+**OrbiDyn** is a Python package that provides high-performance Ordinary Differential Equation (ODE) solvers by compiling C++ code from [OdeCraft](https://github.com/phyzan/odecraft) and exposing it through a Python interface using [pybind11](https://github.com/pybind/pybind11).
 
 ODE systems can be defined directly in Python using the symbolic tools provided by [NumiPhy](https://github.com/phyzan/numiphy). These systems are automatically compiled to machine code and passed to the compiled backend for efficient numerical integration.
 
@@ -48,18 +48,24 @@ pacman -S mingw-w64-x86_64-cmake
 pacman -S mingw-w64-x86_64-mpfr mingw-w64-x86_64-gmp
 ```
 
-## Initialization
+## Getting **OrbiDyn**
 
-After installing the dependencies, initialize the submodules:
+Clone the repository and initialize its submodules:
 
 ```bash
-git submodule update --init --recursive
+git clone --recursive https://github.com/phyzan/orbidyn.git
 ```
 
 Then, install the package using pip:
 
 ```bash
-pip install .
+cd orbidyn && pip install .
+```
+
+Submodules can be updated using:
+
+```bash
+git submodule update --recursive
 ```
 
 
@@ -92,7 +98,15 @@ event = SymbolicPreciseEvent("event", y-1) # detects when y crosses 1
 dq_dt = [y, -x]
 odesys = OdeSystem(dq_dt, t, [x, y], events=[event])
 
-ode = odesys.get(t0=0, q0=[3.0, 0.0], rtol=1e-6, atol=1e-9, stepsize=0.01, compiled=True, scalar_type="double") #use compiled=False for pure python version
+ode = odesys.get(
+  t0=0,
+  q0=[3.0, 0.0], # x0=3, y0=0
+  rtol=1e-6,
+  atol=1e-9,
+  stepsize=0.01, #initial step size
+  method="RK45",
+  compiled=True, #use compiled=False to skip compilation and use the Python backend (slower)
+  scalar_type="double") #standard double precision (float64)
 
 solver = ode.solver()   # get a copy of the internal solver
 print(ode.__class__)    #LowLevelODE

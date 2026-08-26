@@ -11,7 +11,7 @@ py::class_<VirtualNdInterpolator>(m, "NdInterpolator")
     .def_property_readonly("ndim", &PyNdInterp::ndim)
     .def("__call__", &PyNdInterp::py_value_at);
 
-py::class_<rgi::RegularGridInterpolator<double, 0, true>, VirtualNdInterpolator>(m, "RegularGridInterpolator")
+py::class_<rgi::RegularGridInterpolator<0, true>, VirtualNdInterpolator>(m, "RegularGridInterpolator")
     .def(py::init(&PyRegGridInterp::init_main),
         py::arg("values"))
     .def_property_readonly("values", &PyRegGridInterp::get_values)

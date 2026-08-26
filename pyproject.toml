@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = [
     "numpy>=1.20.0",
     "scipy",
-    "numiphy @ git+https://github.com/phyzan/numiphy.git@600d93b326f57a0bfb0641b19514ae5c90fd125a",
+    "numiphy @ git+https://github.com/phyzan/numiphy.git@df76104665537fd464fff55d8f697f6e58d94376",
     # Must match external/pybind11 (vendored submodule) exactly: JIT-compiled user code
     # (numiphy's compile_tools.py, via pybind11.get_include()) links against this pip
     # package's headers, while orbidyn's precompiled extensions are built against the

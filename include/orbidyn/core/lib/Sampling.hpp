@@ -24,11 +24,11 @@ struct PyScalarField {
 
 
 
-class PyRegScalarField : public ode::interp::rgi::RegularGridInterpolator<double, 0, true>, public PyScalarField {
+class PyRegScalarField : public ode::interp::rgi::RegularGridInterpolator<0, true>, public PyScalarField {
 
 public:
 
-    using RGBase = ode::interp::rgi::RegularGridInterpolator<double, 0, true>;
+    using RGBase = ode::interp::rgi::RegularGridInterpolator<0, true>;
 
     static py::array_t<double> parse_values(const py::array_t<double>& values, const py::args& py_grid);
     
@@ -102,7 +102,7 @@ struct PyVecField {
 
     // returns array, as this is a vector field.
 
-    using CLS = ode::interp::VirtualVectorField;
+    using CLS = ode::interp::VirtualVectorField<0>;
 
     static void check_coords(const CLS& self, const double* coords);
 
@@ -118,7 +118,7 @@ struct PyRegVecField {
     using RGBase = PyRegGridInterp;
     using VFBase = PyVecField;
 
-    using CLS = ode::interp::rgi::RegularVectorField<double, 0, true>;
+    using CLS = ode::interp::rgi::RegularVectorField<0, true>;
 
     // ============================= Python interface =============================
     

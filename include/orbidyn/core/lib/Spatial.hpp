@@ -24,7 +24,7 @@ struct PyNdInterp {
 
 struct PyRegGridInterp {
 
-    using CLS = ode::interp::rgi::RegularGridInterpolator<double, 0, true>;
+    using CLS = ode::interp::rgi::RegularGridInterpolator<0, true>;
 
     // ======================= Python interface =====================================
     static CLS init_main(const py::array_t<double>& values, const py::args& py_grid);

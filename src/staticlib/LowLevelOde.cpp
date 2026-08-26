@@ -74,10 +74,22 @@ py::object PyODE::py_integrate(const py::object& interval, const py::object& t_e
     return ORBIDYN_MODIFY_ODE_VARIANT(
         pbox::Box<OdeResult<T>> result = pbox::make_box<OdeResult<T>>();
         if (t_eval.is_none()){
-            ode_ptr->integrate(result.get_raw_pointer(), py::cast<T>(interval), to_Options(event_options), nullptr, max_prints);
+            ode_ptr->integrate(
+                result.get_raw_pointer(),
+                py::cast<T>(interval),
+                to_Options(event_options),
+                max_prints
+            );
         }else{
             std::vector<T> t_seq = to_vector<T>(t_eval.cast<py::iterable>());
-            ode_ptr->integrate(result.get_raw_pointer(), py::cast<T>(interval), t_seq, to_Options(event_options), nullptr, max_prints);
+            ode_ptr->integrate(
+                result.get_raw_pointer(),
+                py::cast<T>(interval),
+                to_Options(event_options),
+                max_prints,
+                nullptr,
+                t_seq
+            );
         }
         return py::cast(PyOdeResult(std::move(result), this->state_dims));
     )
@@ -86,7 +98,7 @@ py::object PyODE::py_integrate(const py::object& interval, const py::object& t_e
 py::object PyODE::py_rich_integrate(const py::object& interval, const py::iterable& event_options, int max_prints){
     return ORBIDYN_MODIFY_ODE_VARIANT(
         pbox::Box<OdeSolution<T>> result = pbox::make_box<OdeSolution<T>>();
-        ode_ptr->rich_integrate(*result.get_raw_pointer(), py::cast<T>(interval), to_Options(event_options), nullptr, max_prints);
+        ode_ptr->rich_integrate(*result.get_raw_pointer(), py::cast<T>(interval), to_Options(event_options), max_prints);
         return py::cast(PyOdeSolution(std::move(result), this->state_dims));
     )
 }
@@ -96,10 +108,22 @@ py::object PyODE::py_integrate_until(const py::object& t, const py::object& t_ev
     return ORBIDYN_MODIFY_ODE_VARIANT(
         pbox::Box<OdeResult<T>> result = pbox::make_box<OdeResult<T>>();
         if (t_eval.is_none()){
-            ode_ptr->integrate_until(result.get_raw_pointer(), py::cast<T>(t), to_Options(event_options), nullptr, max_prints);
+            ode_ptr->integrate_until(
+                result.get_raw_pointer(),
+                py::cast<T>(t),
+                to_Options(event_options),
+                max_prints
+            );
         } else {
             std::vector<T> t_seq = to_vector<T>(t_eval.cast<py::iterable>());
-            ode_ptr->integrate_until(result.get_raw_pointer(), py::cast<T>(t), t_seq, to_Options(event_options), nullptr, max_prints);
+            ode_ptr->integrate_until(
+                result.get_raw_pointer(),
+                py::cast<T>(t),
+                to_Options(event_options),
+                max_prints,
+                nullptr,
+                t_seq
+            );
         }
         return py::cast(PyOdeResult(std::move(result), this->state_dims));
     )
@@ -252,10 +276,21 @@ void py_integrate_all(py::object& list, double interval, const py::object& t_eva
             [&]<typename T>(){
                 owner<ODE<T>>& ode_ref = std::get<pbox::owner<ODE<T>>>(*array[i]);
                 if (t_eval_is_none){
-                    ode_ref->integrate(nullptr, T(interval), options);
+                    ode_ref->integrate(
+                        nullptr,
+                        T(interval),
+                        options
+                    );
                 } else {
                     const std::vector<T>& steps = std::get<std::vector<T>>(step_seq[scalar_type]);
-                    ode_ref->integrate(nullptr, T(interval), steps, options);
+                    ode_ref->integrate(
+                        nullptr,
+                        T(interval),
+                        options,
+                        0,
+                        nullptr,
+                        steps
+                    );
                 }
             }
         );

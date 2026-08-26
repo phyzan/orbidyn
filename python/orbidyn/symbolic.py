@@ -776,8 +776,7 @@ class OdeSystem:
     
     @staticmethod
     def header():
-        _HEADER_PATH =  os.path.join(OdeSystem.lib_path(), "include", "orbidyn")
-        return f'#include "{_HEADER_PATH}"'
+        return '#include <orbidyn/orbidyn.hpp>'
     
     @property
     def has_jac(self) -> bool:
