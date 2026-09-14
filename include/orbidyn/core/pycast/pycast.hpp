@@ -5,16 +5,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <lazy/apps/mpfrLazy.hpp>
-
-namespace ode::python {
-
-/*
-TODO
-Ideally we want lazy::LazyType<mpfr::mpreal>, but the way the python build creates several static libraries, when modifying the default precision of mpreal, the change is not reflected in all static libraries. So we use mpreal directly here.
-*/
-using mpreal_t = mpfr::mpreal;
-
-} // namespace ode::python
+#include "../MpReal.hpp"
 
 namespace py = pybind11;
 

@@ -26,7 +26,6 @@
 
 #include <orbidyn/core/lib_impl/Tools_impl.hpp>
 #include <orbidyn/core/lib_impl/Integrators_impl.hpp>
-#include <orbidyn/core/lib_impl/LowLevelOde_impl.hpp>
 #include <orbidyn/core/lib_impl/Chaos_impl.hpp>
 
 #endif // ORBIDYN_HPP

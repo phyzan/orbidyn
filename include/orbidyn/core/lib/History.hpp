@@ -2,7 +2,6 @@
 #define ORBIDYN_HISTORY_HPP
 
 
-#include <odecraft/OdeResult/OdeResult.hpp>
 #include "Tools.hpp"
 
 

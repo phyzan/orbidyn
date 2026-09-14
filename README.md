@@ -50,6 +50,14 @@ pacman -S mingw-w64-x86_64-mpfr mingw-w64-x86_64-gmp
 
 ## Getting **OrbiDyn**
 
+Install directly through pip:
+
+```bash
+pip install git+https://github.com/phyzan/orbidyn.git
+```
+
+Otherwise, for a custom configuration, you can clone the repository and install it manually.
+
 Clone the repository and initialize its submodules:
 
 ```bash
@@ -59,7 +67,7 @@ git clone --recursive https://github.com/phyzan/orbidyn.git
 Then, install the package using pip:
 
 ```bash
-cd orbidyn && pip install .
+pip install ./orbidyn
 ```
 
 Submodules can be updated using:
@@ -67,6 +75,52 @@ Submodules can be updated using:
 ```bash
 git submodule update --recursive
 ```
+
+## Customizing installation
+
+After cloning the repository, you can toggle the options below, which control preprocessor
+macros in the `C++` code. Pass them through `CMAKE_ARGS`; anything not listed here is pinned
+by the build and cannot be overridden.
+
+**Arbitrary precision**
+
+- `ODECRAFT_USE_LAZY_MPREAL` (default `OFF`): compile the `mpreal` scalar as
+  `lazy::LazyType<mpfr::mpreal>` instead of plain `mpfr::mpreal`. The lazy type evaluates
+  expressions in one pass instead of materialising every intermediate, which is faster for
+  arbitrary-precision arithmetic.
+- `LAZY_MPFR_RND` (default `MPFR_RNDN`): rounding mode for `mpreal` arithmetic, baked in at
+  compile time. See the MPFR documentation for available rounding modes.
+
+**Solver behaviour**
+
+- `ODECRAFT_RK4_DENSE` (default `OFF`): use accurate dense output for `RK4` between steps
+  rather than the cheap interpolant. Costs extra memory per step and is slower.
+- `ODECRAFT_NO_NAN_CHECK` (default `OFF`): skip the `NaN`/`inf` check on every step. A
+  little faster; a diverging system will run on silently instead of stopping.
+- `ODECRAFT_NO_WARN` (default `OFF`): silence the solver's console warnings.
+
+**Build**
+
+- `ORBIDYN_NATIVE_ARCH` (default `OFF`): compile with `-march=native` instead of
+  `-march=x86-64`. Faster on the machine that built it, and not portable to another one.
+  Code compiled at runtime from a symbolic `OdeSystem` follows the same setting.
+- `DEBUG` (default `OFF`): build unoptimised, with debug symbols and assertions enabled
+  (`-O0 -g3`) instead of the optimised release build. Applies to everything -- the solver
+  library, orbidyn's own bindings, and code compiled at runtime from a symbolic `OdeSystem` --
+  since all three are linked together and have to agree on `NDEBUG`.
+
+For example, to build with the faster arbitrary-precision backend:
+
+```bash
+CMAKE_ARGS="-DODECRAFT_USE_LAZY_MPREAL=ON" pip install ./orbidyn
+```
+
+or with assertions in the solvers as well:
+
+```bash
+CMAKE_ARGS="-DODECRAFT_USE_LAZY_MPREAL=ON -DDEBUG=ON" pip install ./orbidyn
+```
+
 
 
 # Features

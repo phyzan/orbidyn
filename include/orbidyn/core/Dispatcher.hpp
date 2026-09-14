@@ -3,8 +3,8 @@
 
 
 #include <map>
-#include <odecraft/Core/SolverFactory.hpp>
-#include "pycast/pycast.hpp"
+#include "Crafted.hpp"
+#include "pycast/pycast.hpp" // IWYU pragma: keep
 
 
 #define ORBIDYN_SCALARS float, double, long double, mpreal_t

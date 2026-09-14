@@ -2,24 +2,26 @@
 #define ORBIDYN_INTEGRATORS_HPP
 
 
-#include <odecraft/Core/VirtualBase.hpp>
 #include "Tools.hpp"
 
 
 #define ORBIDYN_VISIT_SOLVER_VARIANT(...) \
-    std::visit([&]<typename T>(const pbox::owner<OdeRichSolver<T>>& solver){ \
+    std::visit([&]<typename T>(const pbox::owner<stepper<T>>& solver){ \
         __VA_ARGS__ \
     }, this->integrator);
 
 #define ORBIDYN_MODIFY_SOLVER_VARIANT(...) \
-    std::visit([&]<typename T>(pbox::owner<OdeRichSolver<T>>& solver){ \
+    std::visit([&]<typename T>(pbox::owner<stepper<T>>& solver){ \
         __VA_ARGS__ \
     }, this->integrator);
 
 namespace ode::python {
 
+template<typename T>
+using stepper = ::ode::crafted::OdeRichSolver<T>;
+
 template<typename... T>
-using solver_variant_t = std::variant<pbox::owner<OdeRichSolver<T>>...>;
+using solver_variant_t = std::variant<pbox::owner<stepper<T>>...>;
 
 using integrator_t = solver_variant_t<ORBIDYN_SCALARS>;
 
@@ -136,10 +138,9 @@ struct AbstractIntegrator : public PySolver {
     using PySolver::PySolver;
 };
 
-template<typename T, bool force_jac, typename Callable>
+template<typename T, typename Callable>
 bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object& py_jac, const pyshape_t& state_shape, const py::iterable& py_args, const py::iterable& py_events);
 
-// func::template operator()<T>(OdeRichSolver<T>* solver)
 template<typename Callable>
 void py_advance_all_general(py::object& list, Callable&& func, int threads, bool display_progress);
 
