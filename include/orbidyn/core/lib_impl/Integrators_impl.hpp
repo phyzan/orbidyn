@@ -2,13 +2,6 @@
 #define ORBIDYN_INTEGRATORS_IMPL_HPP
 
 
-#include <odecraft/Core/Events_impl.hpp>
-#include <odecraft/Core/BaseSolver_impl.hpp>
-#include <odecraft/Core/RichBase_impl.hpp>
-#include <odecraft/Core/ObjectiveSolver_impl.hpp>
-#include <odecraft/OdeResult/OdeResult_impl.hpp>
-#include <odecraft/Steppers/Steppers_impl.hpp>
-#include <odecraft/Interpolation/Univariate/StateInterp_impl.hpp>
 #include "../lib/Integrators.hpp"
 #include "../lib/EventHandling.hpp"
 #include "../pycast/pycast.hpp" // IWYU pragma: keep
@@ -16,7 +9,7 @@
 namespace ode::python{
 
 
-template<typename T, bool force_jac, typename Callable>
+template<typename T, typename Callable>
 bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object& py_jac, const pyshape_t& state_shape, const py::iterable& py_args, const py::iterable& py_events){
     // passes a copy of the final form of data to the OdeData object. As a result, the referenced data object should not be modified for the entire lifetime of the solver constructed with its copy.
     constexpr ScalarType scalar_type = getScalarType<T>();
@@ -75,10 +68,6 @@ bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object
     } else {
         jac_analytic = false;
     }
-    
-    if (force_jac && !jac_analytic){
-        throw py::value_error("No jacobian was provided, but the solver requires one");
-    }
 
     // ======================== validate events ==========================
     for (py::handle ev : py_events){
@@ -112,64 +101,17 @@ bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object
     // ==========================================================================
     EventList<T> events = to_Events<T>(py_events, state_shape, tuple_args);
 
-    auto explicit_jac_path = [&](){
-        // pass a jacobian whose type is not nullptr at compile time
-        if (use_pythonic_rhs && use_pythonic_jac){
-            action(
-                OdeData{
-                    .Rhs = rhs_lambda_py,
-                    .Jac = jac_lambda_py
-                },
-                std::move(events)
-            );
-        } else if (use_pythonic_rhs && !use_pythonic_jac){
-            action(
-                OdeData{
-                    .Rhs = rhs_lambda_py,
-                    .Jac = jac_lambda_cmp
-                },
-                std::move(events)
-            );
-        } else if (!use_pythonic_rhs && use_pythonic_jac){
-            action(
-                OdeData{
-                    .Rhs = rhs_lambda_cmp,
-                    .Jac = jac_lambda_py
-                },
-                std::move(events)
-            );
-        } else {
-            action(
-                OdeData{
-                    .Rhs = rhs_lambda_cmp,
-                    .Jac = jac_lambda_cmp
-                },
-                std::move(events)
-            );
-        }
+    // One system type, not five. The compiled library ships exactly ode_t<T>, so both
+    // callables are type-erased into rhs_t<T> here rather than branching on the closure
+    // types.
+    crafted::ode_t<T> sys{
+        .Rhs = use_pythonic_rhs ? rhs_t<T>(rhs_lambda_py) : rhs_t<T>(rhs_lambda_cmp),
+        .Jac = jac_analytic
+                   ? (use_pythonic_jac ? rhs_t<T>(jac_lambda_py) : rhs_t<T>(jac_lambda_cmp))
+                   : rhs_t<T>(nullptr)
     };
 
-    if constexpr (force_jac){
-        explicit_jac_path();
-    } else if (jac != nullptr){
-        explicit_jac_path();
-    } else if (use_pythonic_rhs){
-        action(
-            OdeData{
-                .Rhs = rhs_lambda_py
-                // .Jac = nullptr implicitly
-            },
-            std::move(events)
-        );
-    } else {
-        action(
-            OdeData{
-                .Rhs = rhs_lambda_cmp
-                // .Jac =  nullptr implicitly
-            },
-            std::move(events)
-        );
-    }
+    action(std::move(sys), std::move(events));
 
     bool is_lowlevel = f_is_compiled && (jac_is_compiled || py_jac.is_none()) && all_are_lowlevel(py_events);
     return is_lowlevel;

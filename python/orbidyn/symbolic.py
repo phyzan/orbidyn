@@ -1560,7 +1560,7 @@ class OdeSystem:
     @staticmethod
     def get_link_names():
         main = ["chaos", "sampling", "spatial", "lowlevelode", "integrators", "eventhandling", "history", "pytools"]
-        return ["orbidyn_" + name for name in main]
+        return ["orbidyn_" + name for name in main] + ["odecraft_crafted"]
 
     @staticmethod
     def compile_links():
@@ -1579,19 +1579,12 @@ class OdeSystem:
 
     @staticmethod
     def compile_flags():
-        return [
-            "O3",
-            "DNDEBUG",
-            "g0",
-            "fno-math-errno",
-            "fno-trapping-math",
-            "ffunction-sections",
-            "fdata-sections",
-            "march=x86-64",
-            "fvisibility=hidden",
-            "Wl,--gc-sections",
-            "Wl,--as-needed",
-        ]
+        # Not mirrored from CMakeLists.txt -- read back from it. Code compiled here is linked
+        # against the installed static libraries, so it has to agree with them on NDEBUG, on
+        # the architecture, and on every preprocessor definition the headers read. Both lists
+        # are generated into _buildconfig.py by the build that produced those libraries.
+        from ._buildconfig import COMPILE_DEFINITIONS, COMPILE_FLAGS # type: ignore
+        return list(COMPILE_FLAGS) + ["D" + d for d in COMPILE_DEFINITIONS]
 
 
 def HamiltonianSystem2D(V: Expr, t: Symbol, x, y, px, py, args = (), events=()):

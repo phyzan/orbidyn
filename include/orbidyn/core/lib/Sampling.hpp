@@ -2,15 +2,6 @@
 #define ORBIDYN_SAMPLING_HPP
 
 
-#include <odecraft/Core/BaseSolver_impl.hpp>
-#include <odecraft/Core/Events_impl.hpp>
-#include <odecraft/Core/ObjectiveSolver_impl.hpp>
-#include <odecraft/Core/RichBase_impl.hpp>
-#include <odecraft/DenseOde/OdeInt_impl.hpp>
-#include <odecraft/Steppers/Steppers_impl.hpp>
-#include <odecraft/Interpolation/Univariate/StateInterp_impl.hpp>
-#include <odecraft/Interpolation/VectorFields_impl.hpp>
-#include <odecraft/OdeResult/OdeResult_impl.hpp>
 #include "Spatial.hpp"
 
 namespace ode::python {
@@ -19,16 +10,16 @@ namespace ode::python {
 struct PyScalarField {
 
     // returns double (not array), as this is a scalar field.
-    static py::object py_value_at(const ode::interp::VirtualNdInterpolator& self, const py::args& x);
+    static py::object py_value_at(const VirtualNdInterpolator& self, const py::args& x);
 }; // struct PyScalarField
 
 
 
-class PyRegScalarField : public ode::interp::rgi::RegularGridInterpolator<0, true>, public PyScalarField {
+class PyRegScalarField : public RegularGridInterpolator, public PyScalarField {
 
 public:
 
-    using RGBase = ode::interp::rgi::RegularGridInterpolator<0, true>;
+    using RGBase = RegularGridInterpolator;
 
     static py::array_t<double> parse_values(const py::array_t<double>& values, const py::args& py_grid);
     
@@ -53,12 +44,12 @@ public:
 
 
 
-class PyScatteredField : public ode::interp::sci::ScatteredNdInterpolator<0, true>, public PyScalarField {
+class PyScatteredField : public ScatteredNdInterpolator, public PyScalarField {
 
 
 public:
 
-    using InterpBase = ode::interp::sci::ScatteredNdInterpolator<0, true>;
+    using InterpBase = ScatteredNdInterpolator;
 
     // Python signature is ScatteredField(x: np.ndarray (npoints, ndim), values: np.ndarray (npoints,)
     PyScatteredField(const py::array_t<double>& x, const py::array_t<double>& values);
@@ -102,7 +93,7 @@ struct PyVecField {
 
     // returns array, as this is a vector field.
 
-    using CLS = ode::interp::VirtualVectorField<0>;
+    using CLS = VirtualVectorField;
 
     static void check_coords(const CLS& self, const double* coords);
 
@@ -118,7 +109,7 @@ struct PyRegVecField {
     using RGBase = PyRegGridInterp;
     using VFBase = PyVecField;
 
-    using CLS = ode::interp::rgi::RegularVectorField<0, true>;
+    using CLS = RegularVectorField;
 
     // ============================= Python interface =============================
     
@@ -140,7 +131,7 @@ struct PyScatVecField {
     using SCBase = PyScatteredInterp;
     using VFBase = PyVecField;
 
-    using CLS = ode::interp::sci::ScatteredVectorField<0, true>;
+    using CLS = ScatteredVectorField;
 
 
 public:

@@ -2,7 +2,6 @@
 #define ORBIDYN_LOWLEVELODE_HPP
 
 
-#include <odecraft/DenseOde/OdeInt.hpp>
 #include "Tools.hpp"
 
 
@@ -19,6 +18,12 @@
 
 namespace ode::python {
 
+// The polymorphic driver base, so the same handle can hold a plain ODE or a VariationalODE.
+// crafted::ODE<T> and crafted::VariationalODE<T> are the constructor gates; see the note on
+// crafted::OdeDriver.
+template<typename T>
+using ODE = OdeDriver<T>;
+
 template<typename... T>
 using ode_variant_t = std::variant<pbox::owner<ODE<T>>...>;
 
@@ -29,9 +34,6 @@ class PyODE : public DtypeDispatcher{
 public:
     
     PyODE(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jacobian, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const py::str& method, const std::string& scalar_type);
-
-    template<typename T, hasRhsFunc<T> OdeType>
-    PyODE(OdeType ode, T t0, View1D<T> q0, T rtol, T atol, T min_step, T max_step, T stepsize, int dir, EventList<T> events, Stepper method);
 
     PyODE(ode_t ode_owner, pyshape_t state_shape, bool ode_is_lowlevel);
 

@@ -3,7 +3,6 @@
 // namespace ode{
 
 using namespace ode::python;
-using namespace ode::interp;
 
 PYBIND11_MODULE(sampling, m) {
 
@@ -13,7 +12,7 @@ py::class_<PyScalarField>(m, "SampledScalarField")
 
 
 
-py::class_<VirtualVectorField<0>>(m, "SampledVectorField")
+py::class_<VirtualVectorField>(m, "SampledVectorField")
     // .def("coords", &PyVecField::py_coords) //tuple of coordinate arrays
     // .def("values", &PyVecField::py_data) //(N+1)-dimensional : shape (nx, ny, ..., ndim)
     .def("__call__", &PyNdInterp::py_value_at) //takes N coordinates as separate arguments, returns vector value at that point
@@ -41,12 +40,12 @@ py::class_<VirtualVectorField<0>>(m, "SampledVectorField")
         py::arg("method")="RK45",
         py::arg("normalized")=true, py::keep_alive<0, 1>());
 
-py::class_<PyRegScalarField, PyScalarField, rgi::RegularGridInterpolator<0, true>>(m, "RegularGridScalarField")
+py::class_<PyRegScalarField, PyScalarField, RegularGridInterpolator>(m, "RegularGridScalarField")
     .def(py::init<py::array_t<double>, py::args>(),
         py::arg("values"));
 
 
-py::class_<rgi::RegularVectorField<0, true>, VirtualVectorField<0>, rgi::RegularGridInterpolator<0, true>>(m, "RegularGridVectorField")
+py::class_<RegularVectorField, VirtualVectorField, RegularGridInterpolator>(m, "RegularGridVectorField")
     .def(py::init(&PyRegVecField::init_main),
         py::arg("values"), py::arg("coordinates") = "cartesian")
     .def("component", &PyRegVecField::component,
@@ -62,7 +61,7 @@ py::class_<rgi::RegularVectorField<0, true>, VirtualVectorField<0>, rgi::Regular
         py::arg("stepsize")=0.,
         py::arg("method")="RK45");
         
-py::class_<PyScatteredField, PyScalarField, sci::ScatteredNdInterpolator<0, true>>(m, "ScatteredScalarField")
+py::class_<PyScatteredField, PyScalarField, ScatteredNdInterpolator>(m, "ScatteredScalarField")
     .def(py::init<py::array_t<double>, py::array_t<double>>(),
         py::arg("points"),
         py::arg("values"))
@@ -73,7 +72,7 @@ py::class_<PyScatteredField, PyScalarField, sci::ScatteredNdInterpolator<0, true
     .def_property_readonly("values", &PyScatteredField::py_values)
     .def_property_readonly("tri", &PyScatteredField::py_delaunay);
 
-py::class_<sci::ScatteredVectorField<0, true>, VirtualVectorField<0>, sci::ScatteredNdInterpolator<0, true>>(m, "ScatteredVectorField")
+py::class_<ScatteredVectorField, VirtualVectorField, ScatteredNdInterpolator>(m, "ScatteredVectorField")
     .def(py::init(&PyScatVecField::init),
         py::arg("points"),
         py::arg("values"))

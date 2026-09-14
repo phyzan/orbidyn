@@ -3,7 +3,6 @@
 
 
 
-#include <odecraft/Core/Events.hpp>
 #include "../Dispatcher.hpp"
 
 namespace ode::python {

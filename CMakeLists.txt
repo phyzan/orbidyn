@@ -13,21 +13,38 @@ endif()
 
 option(ORBIDYN_NATIVE_ARCH "Enable -march=native instead of -march=x86-64" OFF)
 
-# These flags must match OdeSystem.compile_flags() in python/orbidyn/symbolic.py, which
-# JIT-compiles user code against the static libraries built below.
-set(ORBIDYN_COMPILE_OPTIONS -Wall -Wextra -Wno-unused-parameter)
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
-    list(APPEND ORBIDYN_COMPILE_OPTIONS
+
+option(DEBUG "Build unoptimised with assertions enabled (-O0 -g3) instead of the optimized release build" OFF)
+
+# CMAKE_BUILD_TYPE is pinned to Release by pyproject.toml, and Release carries its own
+# -O3 -DNDEBUG in CMAKE_CXX_FLAGS_RELEASE. Those land ahead of the flags assembled below, so a
+# debug build would compile with `-O3 -DNDEBUG ... -O0 -UNDEBUG` and rely on the later
+# occurrence winning. Switching the configuration outright is what makes the command line say
+# what it means -- and odecraft keys its own debug build on the same two things.
+if(DEBUG)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
+endif()
+
+if(ORBIDYN_NATIVE_ARCH)
+    set(ORBIDYN_ARCH_FLAG march=native)
+else()
+    set(ORBIDYN_ARCH_FLAG march=x86-64)
+endif()
+
+
+if(DEBUG)
+    set(ORBIDYN_CODEGEN_FLAGS -O0 -g3 -UNDEBUG)
+else()
+    set(ORBIDYN_CODEGEN_FLAGS
         -O3 -DNDEBUG -g0 -fno-math-errno -fno-trapping-math
         -ffunction-sections -fdata-sections
     )
     set(ORBIDYN_LINK_OPTIONS -Wl,--gc-sections -Wl,--as-needed)
 endif()
-if(ORBIDYN_NATIVE_ARCH)
-    list(APPEND ORBIDYN_COMPILE_OPTIONS -march=native)
-else()
-    list(APPEND ORBIDYN_COMPILE_OPTIONS -march=x86-64)
-endif()
+list(APPEND ORBIDYN_CODEGEN_FLAGS -${ORBIDYN_ARCH_FLAG} -fvisibility=hidden)
+
+# Warnings are orbidyn's own business and are deliberately not passed on to generated code.
+set(ORBIDYN_COMPILE_OPTIONS -Wall -Wextra -Wno-unused-parameter ${ORBIDYN_CODEGEN_FLAGS})
 
 #===========================================================================================
 #                           Dependencies (vendored as git submodules)
@@ -38,7 +55,18 @@ add_subdirectory(external/pybind11)
 
 set(ODECRAFT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 set(LAZY_ENABLE_MPREAL ON CACHE BOOL "" FORCE)
-set(LAZY_MPFR_RND "MPFR_RNDN" CACHE STRING "" FORCE)
+# No FORCE: the rounding mode is the caller's to pick, and an empty value drops the macro
+# so mpreal reads mpfr::mpreal::get_default_rnd() at runtime instead.
+set(LAZY_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for mpreal arithmetic")
+
+# orbidyn is built entirely on the pre-compiled ode::crafted interface, so the library that
+# ships those instantiations has to be built. odecraft defaults this OFF when it is pulled in
+# via add_subdirectory, on the assumption that the parent only wants the header-only `ode`.
+set(ODECRAFT_BUILD_CRAFTED ON CACHE BOOL "" FORCE)
+
+
+set(ODECRAFT_USE_LAZY_MPREAL OFF CACHE BOOL
+    "Compile ode::crafted's mpreal_t as lazy::LazyType<mpfr::mpreal> instead of plain mpfr::mpreal")
 add_subdirectory(external/odecraft)
 
 # Enabled only after the vendored subdirectories above, so compile_commands.json covers
@@ -63,7 +91,7 @@ find_package(OpenMP)
 
 add_library(orbidyn_headers INTERFACE)
 target_include_directories(orbidyn_headers INTERFACE include)
-target_link_libraries(orbidyn_headers INTERFACE odecraft::odecraft lazy::mpfr pybind11::pybind11 Python::Module)
+target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazy::mpfr pybind11::pybind11 Python::Module)
 target_compile_options(orbidyn_headers INTERFACE ${ORBIDYN_COMPILE_OPTIONS})
 target_link_options(orbidyn_headers INTERFACE ${ORBIDYN_LINK_OPTIONS})
 if(OpenMP_FOUND)
@@ -96,6 +124,35 @@ target_link_libraries(orbidyn_spatial PUBLIC orbidyn_lowlevelode orbidyn_integra
 
 orbidyn_static_lib(sampling       src/staticlib/Sampling.cpp)
 target_link_libraries(orbidyn_sampling PUBLIC orbidyn_spatial)
+
+#===========================================================================================
+#                           Build configuration for JIT-compiled code
+#===========================================================================================
+# ODECRAFT_USE_LAZY_MPREAL and friends are preprocessor macros the odecraft, xdiff and lazy
+# headers read, and that one decides a *type*. CMake gives them to the targets below as usage
+# requirements, but JIT-compiled user code never goes through CMake: numiphy invokes the
+# compiler itself using OdeSystem.compile_flags(). Disagree, and the mismatch surfaces as an
+# undefined reference to a mangled name, or as two incompatible definitions of one type.
+#
+# They cannot be hardcoded on the Python side either, precisely because the caller may flip
+# them. So write out what this build actually used and have compile_flags() read it back.
+# Taken from the real target at generate time, so a new option needs no mirroring here.
+file(GENERATE
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/_buildconfig.py
+    CONTENT "# Generated by CMake. Do not edit.
+# How orbidyn's static libraries were compiled. JIT-compiled user code links against them, so
+# it has to be given the same flags. See OdeSystem.compile_flags() in symbolic.py.
+_DEFS = \"$<JOIN:$<TARGET_PROPERTY:orbidyn_pytools,COMPILE_DEFINITIONS>,;>\"
+COMPILE_DEFINITIONS = [d for d in _DEFS.split(';') if d]
+
+# Optimisation, debug and architecture flags, minus the leading dash: the compiler driver
+# numiphy uses adds it back.
+_FLAGS = \"${ORBIDYN_CODEGEN_FLAGS};${ORBIDYN_LINK_OPTIONS}\"
+COMPILE_FLAGS = [f.lstrip('-') for f in _FLAGS.split(';') if f]
+"
+)
+
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/_buildconfig.py DESTINATION orbidyn)
 
 #===========================================================================================
 #                           Python extension modules
@@ -131,8 +188,12 @@ install(TARGETS integrators eventhandling history lowlevelode chaos spatial samp
     RUNTIME DESTINATION orbidyn
 )
 
+# odecraft_crafted ships with them: JIT-compiled user code includes <orbidyn/orbidyn.hpp>,
+# which is built on ode::crafted, so it needs the instantiations at link time just as the
+# static libraries above do. See OdeSystem.get_link_names() in python/orbidyn/symbolic.py.
 install(TARGETS orbidyn_pytools orbidyn_integrators orbidyn_eventhandling orbidyn_history
                 orbidyn_lowlevelode orbidyn_chaos orbidyn_spatial orbidyn_sampling
+                odecraft_crafted
     ARCHIVE DESTINATION orbidyn/lib
 )
 

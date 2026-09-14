@@ -2,21 +2,32 @@
 #define ORBIDYN_SPATIAL_HPP
 
 
-#include <odecraft/Interpolation/NdInterpolator_impl.hpp>
-#include <odecraft/Interpolation/Regular/Grids_impl.hpp>
-#include <odecraft/Interpolation/Regular/RegularGridInterpolator_impl.hpp>
-#include <odecraft/Interpolation/Scattered/Delaunay_impl.hpp>
-#include <odecraft/Interpolation/Scattered/ScatteredNdInterpolator_impl.hpp>
 #include "Tools.hpp" // IWYU pragma: keep
 
 namespace ode::python {
 
+/// @brief A C-contiguous double array, which is what every interpolator constructor wants.
+using c_array_t = py::array_t<double, py::array::c_style | py::array::forcecast>;
+
+/**
+ * @brief View @p arr as the values container the compiled constructors take.
+ *
+ * odecraft compiles those constructors for exactly one container, crafted::field_values_t;
+ * handing them a py::array_t instead would need the constructor template instantiated here,
+ * which is what linking against the compiled interface is meant to avoid. odecraft also has
+ * no business knowing what a py::array_t is.
+ *
+ * Non-owning: @p arr must outlive the constructor call, so keep it in a named local.
+ */
+field_values_t as_field_values(const c_array_t& arr);
+
+
 
 struct PyNdInterp {
 
-    static py::object py_value_at(const ode::interp::VirtualNdInterpolator& self, const py::args& x);
+    static py::object py_value_at(const VirtualNdInterpolator& self, const py::args& x);
 
-    static int ndim(const ode::interp::VirtualNdInterpolator& self);
+    static int ndim(const VirtualNdInterpolator& self);
 
 }; // struct PyNdInterp
 
@@ -24,7 +35,7 @@ struct PyNdInterp {
 
 struct PyRegGridInterp {
 
-    using CLS = ode::interp::rgi::RegularGridInterpolator<0, true>;
+    using CLS = RegularGridInterpolator;
 
     // ======================= Python interface =====================================
     static CLS init_main(const py::array_t<double>& values, const py::args& py_grid);
@@ -47,13 +58,13 @@ struct PyRegGridInterp {
 
 class PyDelaunay {
 
-    using Base = ode::interp::sci::DelaunayTri<0>;
+    using Base = DelaunayTri;
 
 public:
 
     PyDelaunay(const py::array_t<double>& x);
 
-    PyDelaunay(ode::interp::sci::TriPtr<0> tri);
+    PyDelaunay(TriPtr tri);
 
     py::object py_points() const;
 
@@ -70,7 +81,7 @@ public:
 
     double total_volume() const;
 
-    ode::interp::sci::TriPtr<0> tri() const;
+    TriPtr tri() const;
 
     // ================ Pickling ===================
     py::dict    py_get_state() const;
@@ -87,7 +98,7 @@ private:
 
     static std::nullptr_t parse_args(const py::array_t<double>& x);
 
-    ode::interp::sci::TriPtr<0> tri_;
+    TriPtr tri_;
     mutable bool volume_is_cached_ = false;
     mutable double cached_total_volume_ = 0;
 
@@ -96,7 +107,7 @@ private:
 
 struct PyScatteredInterp {
 
-    using CLS = ode::interp::sci::ScatteredNdInterpolator<0, true>;
+    using CLS = ScatteredNdInterpolator;
 
     // Python signature is ScatteredNdInterpolator(x: np.ndarray (npoints, ndim), values: np.ndarray (npoints, ...)), where
     static CLS init_main(const py::array_t<double>& x, const py::array_t<double>& values);

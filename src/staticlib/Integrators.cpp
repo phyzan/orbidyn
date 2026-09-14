@@ -1,5 +1,4 @@
-#include <odecraft/Core/SolverFactory.hpp>
-#include <odecraft/Core/BaseSolver_impl.hpp>
+#include <chrono>
 #include <orbidyn/core/lib_impl/Integrators_impl.hpp>
 #include <orbidyn/core/lib_impl/Tools_impl.hpp>
 
@@ -13,9 +12,9 @@ namespace ode::python {
 PyConstSolver::PyConstSolver(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jac, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type, const std::string& method) : DtypeDispatcher(scalar_type){
     this->init_scalar_type();
     dispatch_scalar_type<void>(this->scalar_type, [&]<typename T>(){
-        this->is_lowlevel = init_ode_data<T, false>([&](auto ode_obj, EventList<T>&& events){
+        this->is_lowlevel = init_ode_data<T>([&](auto ode_obj, EventList<T>&& events){
             std::vector<T> q0 = to_vector<T>(py_q0);
-            this->integrator = make_solver<UtilPolicy::RichVirtual>(getIntegrator(method), std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events));
+            this->integrator = make_rich_vsolver<T>(getIntegrator(method), std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events));
         }, f, jac, shape_of(py_q0), py_args, py_events);
     });
 }
@@ -181,9 +180,9 @@ py::tuple PyConstSolver::timeit_jac(const py::object& t, const py::iterable& py_
             throw py::value_error("Invalid size of state array in call to rhs");
         }
         pass_values(q.data(), py_q, nsys);
-        auto start = NOW;
+        auto start = std::chrono::steady_clock::now();
         solver->get_jac(jac.data(), t.cast<T>(), q.data(), nullptr);
-        auto end = NOW;
+        auto end = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         for (size_t i=0; i<nsys; i++){
             for (size_t j=i+1; j<nsys; j++){
@@ -252,9 +251,9 @@ py::object PySolver::advance() {
 
 py::tuple PySolver::timeit_step() {
     return ORBIDYN_MODIFY_SOLVER_VARIANT(
-        auto start = NOW;
+        auto start = std::chrono::steady_clock::now();
         bool success = solver->do_advance();
-        auto end = NOW;
+        auto end = std::chrono::steady_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
         return py::make_tuple(py::cast(duration.count()), py::cast(success));
     )

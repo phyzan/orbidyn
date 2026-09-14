@@ -1,6 +1,6 @@
 #include <orbidyn/core/lib/History.hpp>
 #include <orbidyn/core/lib/Sampling.hpp>
-#include <orbidyn/core/lib_impl/LowLevelOde_impl.hpp>
+#include <orbidyn/core/lib/LowLevelOde.hpp>
 #include <orbidyn/core/lib_impl/Tools_impl.hpp>
 
 
@@ -13,7 +13,7 @@ namespace ode::python {
 //                                      PyScalarField
 // ============================================================================================
 
-py::object PyScalarField::py_value_at(const ode::interp::VirtualNdInterpolator& self, const py::args& x){
+py::object PyScalarField::py_value_at(const VirtualNdInterpolator& self, const py::args& x){
     return PyNdInterp::py_value_at(self, x);
 }
 
@@ -130,7 +130,10 @@ PyRegVecField::CLS PyRegVecField::init_main(const py::array_t<double>& values, c
     const double* v_data = values_c.data();
     // values shape right not is (ndim, ...), where (...) has a product of n_points.
     // We need to reshape to (ndim, n_points)
-    View2D<double> v_view(v_data, values_c.shape(0), values_c.size() / values_c.shape(0));
+    // (ndim, ...) collapsed to (ndim, n_points), as the values container the compiled
+    // constructor takes.
+    const py::ssize_t v_shape[2] = {values_c.shape(0), values_c.size() / values_c.shape(0)};
+    field_values_t v_view(v_data, v_shape, 2);
     ode::interp::rgi::CoordType coord_type_enum;
     if (coord_type == "cartesian"){
         coord_type_enum = ode::interp::rgi::CoordType::Cartesian;
@@ -187,17 +190,19 @@ py::object PyRegVecField::component(const CLS& self, int i){
 PyScatVecField::CLS PyScatVecField::init(const py::array_t<double>& x, const py::array_t<double>& values){
     parse_values(values);
     SCBase::parse_args(x, values, false);
-    auto x_c = py::array_t<double, py::array::c_style | py::array::forcecast>(x);
+    auto x_c = c_array_t(x);
+    auto v_c = c_array_t(values);
     const int ndim = (x_c.ndim() == 1) ? 1 : int(x_c.shape(1));
     const double* x_data = x_c.data();
-    return {x_data, values, ndim, false};
+    return {x_data, as_field_values(v_c), ndim, false};
 }
 
 
 PyScatVecField::CLS PyScatVecField::init_tri(const PyDelaunay& tri, const py::array_t<double>& values){
     parse_values(values);
     SCBase::parse_tri_args(tri, values, false);
-    return {tri.tri(), values, false};
+    auto v_c = c_array_t(values);
+    return {tri.tri(), as_field_values(v_c), false};
 }
 
 void PyScatVecField::parse_values( const py::array_t<double>& values){

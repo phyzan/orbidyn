@@ -2,7 +2,6 @@
 #define ORBIDYN_EVENTHANDLING_HPP
 
 
-#include <odecraft/Core/Events.hpp>
 #include "Tools.hpp"
 
 namespace ode::python {

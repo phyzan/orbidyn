@@ -2,7 +2,6 @@
 
 
 using namespace ode::python;
-using namespace ode::interp;
 
 
 PYBIND11_MODULE(spatial, m) {
@@ -11,7 +10,7 @@ py::class_<VirtualNdInterpolator>(m, "NdInterpolator")
     .def_property_readonly("ndim", &PyNdInterp::ndim)
     .def("__call__", &PyNdInterp::py_value_at);
 
-py::class_<rgi::RegularGridInterpolator<0, true>, VirtualNdInterpolator>(m, "RegularGridInterpolator")
+py::class_<RegularGridInterpolator, VirtualNdInterpolator>(m, "RegularGridInterpolator")
     .def(py::init(&PyRegGridInterp::init_main),
         py::arg("values"))
     .def_property_readonly("values", &PyRegGridInterp::get_values)
@@ -33,7 +32,7 @@ py::class_<PyDelaunay>(m, "DelaunayTri")
         py::arg("coords"));
 
 
-py::class_<sci::ScatteredNdInterpolator<0, true>, VirtualNdInterpolator>(m, "ScatteredNdInterpolator")
+py::class_<ScatteredNdInterpolator, VirtualNdInterpolator>(m, "ScatteredNdInterpolator")
     .def(py::init(&PyScatteredInterp::init_main),
         py::arg("points"), py::arg("values"))
     .def(py::init(&PyScatteredInterp::init_tri),

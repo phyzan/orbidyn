@@ -1,8 +1,6 @@
 #include <orbidyn/core/lib_impl/Tools_impl.hpp>
 
-
 namespace ode::python {
-
 
 
 PyFuncWrapper::PyFuncWrapper(const py::capsule& obj, py::ssize_t py_nsys, const py::array_t<py::ssize_t>& py_shape_out, py::ssize_t py_nargs, const std::string& scalar_type) :
@@ -18,7 +16,7 @@ PyFuncWrapper::PyFuncWrapper(const py::capsule& obj, py::ssize_t py_nsys, const 
 
         // set output shape
         auto output_shape_c = py::array_t<py::ssize_t, py::array::c_style | py::array::forcecast>(py_shape_out);
-        ndspan::copy_array(this->shape_out.data(), output_shape_c.data(), this->shape_out.size());
+        arrcpy(this->shape_out.data(), output_shape_c.data(), this->shape_out.size());
         long s = 1;
         for (long i : this->shape_out){
             s *= i;

@@ -1,4 +1,3 @@
-#include <odecraft/Core/Events_impl.hpp>
 #include <orbidyn/core/lib/EventHandling.hpp>
 #include <orbidyn/core/lib_impl/Tools_impl.hpp>
 
@@ -97,7 +96,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
             if (this->is_masked_){
                 // also mask is not null
                 assert((std::holds_alternative<raw_pyrhs_t<T>>(this->mask_)) && "objfun and mask have incompatible scalar types");
-                return make_event<T, PreciseEvent>(
+                return make_precise_event<T>(
                     this->name(),
                     [=](const T& t, const T* q){
                         return objfun(t, q, args.data());
@@ -108,7 +107,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
                     this->mask_delayed()
                 );
             } else {
-                return make_event<T, PreciseEvent>(
+                return make_precise_event<T>(
                     this->name(),
                     [=](const T& t, const T* q){
                         return objfun(t, q, args.data());
@@ -123,7 +122,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
             // objfun lowlevel, mask pythonic
             return std::visit([=, this]<typename T>(raw_pyobjfun_t<T> objfun) -> event_generic_t {
                 std::vector<T> args = to_vector<T>(pyargs);
-                return make_event<T, PreciseEvent>(
+                return make_precise_event<T>(
                     this->name(),
                     [=](const T& t, const T* q){
                         return objfun(t, q, args.data());
@@ -138,7 +137,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
             // objfun pythonic, mask lowlevel
             return std::visit([=, this]<typename T>(raw_pyrhs_t<T> mask) -> event_generic_t {
                 std::vector<T> args = to_vector<T>(pyargs);
-                return make_event<T, PreciseEvent>(
+                return make_precise_event<T>(
                     this->name(),
                     [=, objfun=this->py_objfun_](const T& t, const T* q){
                         return objfun_pythonic(t, q, shape, pyargs, objfun);
@@ -154,7 +153,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
             return dispatch_scalar_type<event_generic_t>(
                 this->scalar_type,
                 [=, this]<typename T>(){
-                    return make_event<T, PreciseEvent>(
+                    return make_precise_event<T>(
                         this->name(),
                         [=, objfun=this->py_objfun_](const T& t, const T* q){
                             return objfun_pythonic(t, q, shape, pyargs, objfun);
@@ -172,7 +171,7 @@ event_generic_t PyPrecEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) c
         return dispatch_scalar_type<event_generic_t>(
             this->scalar_type,
             [=, this]<typename T>(){
-                return make_event<T, PreciseEvent>(
+                return make_precise_event<T>(
                     this->name(),
                     [=, objfun=this->py_objfun_](const T& t, const T* q){
                         return objfun_pythonic(t, q, shape, pyargs, objfun);
@@ -211,7 +210,7 @@ event_generic_t PyPerEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) co
             this->scalar_type,
             [this, pyargs]<typename T>(){
                 assert((std::holds_alternative<raw_pyrhs_t<T>>(this->mask_)) && "Periodic event and its mask have incompatible scalar types");
-                return make_event<T, PeriodicEvent>(
+                return make_periodic_event<T>(
                     this->name(),
                     this->period_.cast<T>(),
                     this->mask_compiled(pyargs, std::get<raw_pyrhs_t<T>>(this->mask_)),
@@ -224,7 +223,7 @@ event_generic_t PyPerEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) co
         return dispatch_scalar_type<event_generic_t>(
             this->scalar_type,
             [=, this]<typename T>(){
-                return make_event<T, PeriodicEvent>(
+                return make_periodic_event<T>(
                     this->name(),
                     this->period_.cast<T>(),
                     this->mask_pythonic<T>(shape, pyargs),
@@ -237,7 +236,7 @@ event_generic_t PyPerEvent::toEvent(const pyshape_t& shape, py::tuple pyargs) co
         return dispatch_scalar_type<event_generic_t>(
             this->scalar_type,
             [this]<typename T>(){
-                return make_event<T, PeriodicEvent>(
+                return make_periodic_event<T>(
                     this->name(),
                     this->period_.cast<T>(),
                     nullptr,
