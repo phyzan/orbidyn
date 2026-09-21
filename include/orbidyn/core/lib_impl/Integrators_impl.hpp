@@ -1,7 +1,7 @@
 #ifndef ORBIDYN_INTEGRATORS_IMPL_HPP
 #define ORBIDYN_INTEGRATORS_IMPL_HPP
 
-
+#include <omp.h>
 #include "../lib/Integrators.hpp"
 #include "../lib/EventHandling.hpp"
 #include "../pycast/pycast.hpp" // IWYU pragma: keep
