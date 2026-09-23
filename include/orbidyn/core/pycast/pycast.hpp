@@ -4,7 +4,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
-#include <lazy/apps/mpfrLazy.hpp>
+#include <lazex/apps/lazex_mpreal.hpp>
 #include "../MpReal.hpp"
 
 namespace py = pybind11;

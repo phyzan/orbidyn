@@ -7,7 +7,7 @@
  *
  * The only scalar in ORBIDYN_SCALARS that is not a builtin, and the only one whose identity
  * is decided by a build option: odecraft selects ode::crafted::mpreal_t with
- * ODECRAFT_USE_LAZY_MPREAL, between lazy::LazyType<mpfr::mpreal> and plain mpfr::mpreal.
+ * ODECRAFT_USE_LAZY_MPREAL, between lazex::LazyType<mpfr::mpreal> and plain mpfr::mpreal.
  *
  * orbidyn does not pin that option -- it defaults it off and lets the caller override it
  * (CMAKE_ARGS="-DODECRAFT_USE_LAZY_MPREAL=ON" pip install .), so flipping the macro is the

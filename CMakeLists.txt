@@ -54,10 +54,10 @@ find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 add_subdirectory(external/pybind11)
 
 set(ODECRAFT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(LAZY_ENABLE_MPREAL ON CACHE BOOL "" FORCE)
+set(LAZEX_ENABLE_MPREAL ON CACHE BOOL "" FORCE)
 # No FORCE: the rounding mode is the caller's to pick, and an empty value drops the macro
 # so mpreal reads mpfr::mpreal::get_default_rnd() at runtime instead.
-set(LAZY_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for mpreal arithmetic")
+set(LAZEX_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for mpreal arithmetic")
 
 # orbidyn is built entirely on the pre-compiled ode::crafted interface, so the library that
 # ships those instantiations has to be built. odecraft defaults this OFF when it is pulled in
@@ -66,7 +66,7 @@ set(ODECRAFT_BUILD_CRAFTED ON CACHE BOOL "" FORCE)
 
 
 set(ODECRAFT_USE_LAZY_MPREAL OFF CACHE BOOL
-    "Compile ode::crafted's mpreal_t as lazy::LazyType<mpfr::mpreal> instead of plain mpfr::mpreal")
+    "Compile ode::crafted's mpreal_t as lazex::LazyType<mpfr::mpreal> instead of plain mpfr::mpreal")
 add_subdirectory(external/odecraft)
 
 # Enabled only after the vendored subdirectories above, so compile_commands.json covers
@@ -91,7 +91,7 @@ find_package(OpenMP)
 
 add_library(orbidyn_headers INTERFACE)
 target_include_directories(orbidyn_headers INTERFACE include)
-target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazy::mpfr pybind11::pybind11 Python::Module)
+target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazex::mpfr pybind11::pybind11 Python::Module)
 target_compile_options(orbidyn_headers INTERFACE ${ORBIDYN_COMPILE_OPTIONS})
 target_link_options(orbidyn_headers INTERFACE ${ORBIDYN_LINK_OPTIONS})
 if(OpenMP_FOUND)
@@ -128,7 +128,7 @@ target_link_libraries(orbidyn_sampling PUBLIC orbidyn_spatial)
 #===========================================================================================
 #                           Build configuration for JIT-compiled code
 #===========================================================================================
-# ODECRAFT_USE_LAZY_MPREAL and friends are preprocessor macros the odecraft, xdiff and lazy
+# ODECRAFT_USE_LAZY_MPREAL and friends are preprocessor macros the odecraft, xdiff and lazex
 # headers read, and that one decides a *type*. CMake gives them to the targets below as usage
 # requirements, but JIT-compiled user code never goes through CMake: numiphy invokes the
 # compiler itself using OdeSystem.compile_flags(). Disagree, and the mismatch surfaces as an
@@ -224,11 +224,11 @@ install(DIRECTORY external/odecraft/external/xdiff/include/
     DESTINATION orbidyn/include
     FILES_MATCHING PATTERN "*.hpp"
 )
-install(DIRECTORY external/odecraft/external/xdiff/external/lazy/include/
+install(DIRECTORY external/odecraft/external/xdiff/external/lazex/include/
     DESTINATION orbidyn/include
     FILES_MATCHING PATTERN "*.hpp"
 )
-install(FILES external/odecraft/external/xdiff/external/lazy/external/mpreal/mpreal.h
+install(FILES external/odecraft/external/xdiff/external/lazex/external/mpreal/mpreal.h
     DESTINATION orbidyn/include
 )
 install(DIRECTORY external/odecraft/external/ndspan/include/

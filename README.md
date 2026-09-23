@@ -85,10 +85,10 @@ by the build and cannot be overridden.
 **Arbitrary precision**
 
 - `ODECRAFT_USE_LAZY_MPREAL` (default `OFF`): compile the `mpreal` scalar as
-  `lazy::LazyType<mpfr::mpreal>` instead of plain `mpfr::mpreal`. The lazy type evaluates
+  `lazex::LazyType<mpfr::mpreal>` instead of plain `mpfr::mpreal`. The lazy type evaluates
   expressions in one pass instead of materialising every intermediate, which is faster for
   arbitrary-precision arithmetic.
-- `LAZY_MPFR_RND` (default `MPFR_RNDN`): rounding mode for `mpreal` arithmetic, baked in at
+- `LAZEX_MPFR_RND` (default `MPFR_RNDN`): rounding mode for `mpreal` arithmetic, baked in at
   compile time. See the MPFR documentation for available rounding modes.
 
 **Solver behaviour**
@@ -125,7 +125,7 @@ CMAKE_ARGS="-DODECRAFT_USE_LAZY_MPREAL=ON -DDEBUG=ON" pip install ./orbidyn
 
 # Features
 
-Similar to [OdeCraft](https://github.com/phyzan/odecraft), OrbiDyn provides a very similar interface and tools:
+OrbiDyn provides an interface and tools very similar to those at [OdeCraft](https://github.com/phyzan/odecraft):
 
 - Flexible numerical type support. Solve ODEs using:
   - `float` (float32)
