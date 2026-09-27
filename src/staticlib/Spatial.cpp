@@ -29,12 +29,12 @@ py::object PyNdInterp::py_value_at(const VirtualNdInterpolator& self, const py::
     
 
     // input shape per axis can have any shape
-    std::vector<py::array_t<double>> coords(self.ndim());
+    std::vector<c_array_t> coords(self.ndim());
 
     for (int i=0; i<self.ndim(); i++){
 
         // if this cannot be cast to a numpy array, a python error will be thrown anyway
-        coords[i] = py::array_t<double, py::array::c_style | py::array::forcecast>(x[i].cast<py::array_t<double>>());
+        coords[i] = py::array_t<double, py::array::c_style | py::array::forcecast>(x[i].cast<c_array_t>());
         if (i == 0){
             for (ssize_t j=0; j<coords[i].ndim(); j++){
                 input_shape.push_back(int(coords[i].shape(j)));
@@ -85,7 +85,7 @@ int PyNdInterp::ndim(const VirtualNdInterpolator& self) {
 //                                      PyRegGridInterp
 //===========================================================================================
 
-PyRegGridInterp::CLS PyRegGridInterp::init_main(const py::array_t<double>& values, const py::args& py_grid) {
+PyRegGridInterp::CLS PyRegGridInterp::init_main(const c_array_t& values, const py::args& py_grid) {
     return init(values, parse_args(values, py_grid, true), true);
 }
 
@@ -101,7 +101,7 @@ py::tuple PyRegGridInterp::get_grid(const CLS& self){
     return {res};
 }
 
-PyRegGridInterp::CLS PyRegGridInterp::init(const py::array_t<double>& values, const std::vector<Array1D<double>>& grid, bool coord_axis_first) {
+PyRegGridInterp::CLS PyRegGridInterp::init(const c_array_t& values, const std::vector<Array1D<double>>& grid, bool coord_axis_first) {
     //create a proper view over the data first.
     auto values_c = py::array_t<double, py::array::c_style | py::array::forcecast>(values);
     const double* data = values_c.data();
@@ -130,26 +130,26 @@ PyRegGridInterp::CLS PyRegGridInterp::init(const py::array_t<double>& values, co
     return {v, grid, coord_axis_first};
 }
 
-PyRegGridInterp::CLS PyRegGridInterp::init(const py::array_t<double>& values, const py::args& py_grid, bool coord_axis_first) {
+PyRegGridInterp::CLS PyRegGridInterp::init(const c_array_t& values, const py::args& py_grid, bool coord_axis_first) {
     return init(values, parse_args(values, py_grid, coord_axis_first), coord_axis_first);
 }
 
 
 
-std::vector<Array1D<double>> PyRegGridInterp::parse_args(const py::array_t<double>& values, const py::args& py_grid, bool coord_axis_first){
+std::vector<Array1D<double>> PyRegGridInterp::parse_args(const c_array_t& values, const py::args& py_grid, bool coord_axis_first){
     if (py_grid.size() == 0){
         throw py::value_error("Grid arrays cannot be empty");
     }else if (py_grid.size() > size_t(values.ndim())){
         throw py::value_error("The values array must have at least as many dimensions as the number of grid arrays");
-    }else if (!(values.flags() & py::array::c_style)){
-        throw py::value_error("Values array must be C-contiguous");
     }
+    // No C-contiguity check: c_array_t converted `values` on the way in, so a Fortran-ordered
+    // or strided array arrives here already normalised rather than being rejected.
 
     std::vector<Array1D<double>> grid(py_grid.size());
     size_t axis = 0;
     for (const py::handle& item : py_grid){
         try {
-            auto coords = py::array_t<double, py::array::c_style | py::array::forcecast>(item.cast<py::array_t<double>>());
+            auto coords = py::array_t<double, py::array::c_style | py::array::forcecast>(item.cast<c_array_t>());
             if (coords.ndim() != 1){
                 throw py::value_error("Grid arrays must be 1D");
             }else if (!ndspan::isStrictlyAscending(coords.data(), coords.size())){
@@ -180,11 +180,11 @@ std::vector<Array1D<double>> PyRegGridInterp::parse_args(const py::array_t<doubl
 //                                      PyDelaunay
 //===========================================================================================
 
-PyDelaunay::PyDelaunay(const py::array_t<double>& x) : PyDelaunay(parse_args(x), x) {}
+PyDelaunay::PyDelaunay(const c_array_t& x) : PyDelaunay(parse_args(x), x) {}
 
 PyDelaunay::PyDelaunay(TriPtr tri) : tri_(std::move(tri)) {}
 
-PyDelaunay::PyDelaunay(std::nullptr_t, const py::array_t<double>& x) : tri_([&]{
+PyDelaunay::PyDelaunay(std::nullptr_t, const c_array_t& x) : tri_([&]{
     auto x_c = py::array_t<double, py::array::c_style | py::array::forcecast>(x);
     return std::make_shared<DelaunayTri>(x_c.data(), x_c.shape(0), (x_c.ndim() == 1 ? 1 : x_c.shape(1)));
 }()) {}
@@ -205,7 +205,7 @@ int PyDelaunay::py_nsimplices() const{
     return tri_->nsimplices();
 }
 
-int PyDelaunay::py_find_simplex(const py::array_t<double>& point) const{
+int PyDelaunay::py_find_simplex(const c_array_t& point) const{
     if (point.ndim() != 1 || point.shape(0) != tri_->ndim()){
         throw py::value_error("Query point must be a 1D array of length " + std::to_string(tri_->ndim()));
     }
@@ -229,7 +229,7 @@ double PyDelaunay::total_volume() const{
     }
 }
 
-py::object PyDelaunay::py_get_simplex(const py::array_t<double>& point) const{
+py::object PyDelaunay::py_get_simplex(const c_array_t& point) const{
     int simplex_idx = py_find_simplex(point);
     if (simplex_idx == -1){
         return py::none();
@@ -251,7 +251,7 @@ TriPtr PyDelaunay::tri() const{
 }
 
 
-std::nullptr_t PyDelaunay::parse_args(const py::array_t<double>& x){
+std::nullptr_t PyDelaunay::parse_args(const c_array_t& x){
     if (x.ndim() != 1 && x.ndim() != 2){
         throw py::value_error("ScatteredField requires a 2D array for the input points (or optionally a 1D array for 1D fields)");
     }else if (x.ndim() == 2 && x.shape(0) < x.shape(1)+1){
@@ -280,7 +280,7 @@ py::dict PyDelaunay::py_get_state() const{
 PyDelaunay PyDelaunay::py_set_state(const py::dict& state){
     try {
         //Array2D<double, 0, NDIM>
-        auto py_points = py::array_t<double, py::array::c_style | py::array::forcecast>(state["points"].cast<py::array_t<double>>()); 
+        auto py_points = py::array_t<double, py::array::c_style | py::array::forcecast>(state["points"].cast<c_array_t>()); 
 
         // Array2D<int, 0, Base::DIM_SPX>
         auto py_simplices = py::array_t<int, py::array::c_style | py::array::forcecast>(state["simplices"].cast<py::array_t<int>>());
@@ -289,10 +289,10 @@ PyDelaunay PyDelaunay::py_set_state(const py::dict& state){
         auto py_neighbors = py::array_t<int, py::array::c_style | py::array::forcecast>(state["neighbors"].cast<py::array_t<int>>());
 
         // Array2D<double, 0, NDIM>
-        auto py_v0 = py::array_t<double, py::array::c_style | py::array::forcecast>(state["v0"].cast<py::array_t<double>>());
+        auto py_v0 = py::array_t<double, py::array::c_style | py::array::forcecast>(state["v0"].cast<c_array_t>());
 
         //Array3D<double, 0, NDIM, NDIM>
-        auto py_invT = py::array_t<double, py::array::c_style | py::array::forcecast>(state["invT"].cast<py::array_t<double>>());
+        auto py_invT = py::array_t<double, py::array::c_style | py::array::forcecast>(state["invT"].cast<c_array_t>());
 
         PyDelaunay obj(std::make_shared<DelaunayTri>());
         
@@ -314,21 +314,21 @@ PyDelaunay PyDelaunay::py_set_state(const py::dict& state){
 //                                      PyScatteredInterp
 //===========================================================================================
 
-PyScatteredInterp::CLS PyScatteredInterp::init_main(const py::array_t<double>& x, const py::array_t<double>& values) {
+PyScatteredInterp::CLS PyScatteredInterp::init_main(const c_array_t& x, const c_array_t& values) {
     return init(parse_args(x, values, true), x, values, true);
 }
 
 
 
-PyScatteredInterp::CLS PyScatteredInterp::init_tri(const PyDelaunay& tri, const py::array_t<double>& values) {
+PyScatteredInterp::CLS PyScatteredInterp::init_tri(const PyDelaunay& tri, const c_array_t& values) {
     return init(parse_tri_args(tri, values, true), tri, values, true);
 }
 
-PyScatteredInterp::CLS PyScatteredInterp::init(const py::array_t<double>& x, const py::array_t<double>& values, bool coord_axis_first) {
+PyScatteredInterp::CLS PyScatteredInterp::init(const c_array_t& x, const c_array_t& values, bool coord_axis_first) {
     return init(parse_args(x, values, coord_axis_first), x, values, coord_axis_first);
 }
 
-PyScatteredInterp::CLS PyScatteredInterp::init(const PyDelaunay& tri, const py::array_t<double>& values, bool coord_axis_first) {
+PyScatteredInterp::CLS PyScatteredInterp::init(const PyDelaunay& tri, const c_array_t& values, bool coord_axis_first) {
     return init(parse_tri_args(tri, values, coord_axis_first), tri, values, coord_axis_first);
 }
 
@@ -338,14 +338,14 @@ field_values_t as_field_values(const c_array_t& arr){
 }
 
 
-PyScatteredInterp::CLS PyScatteredInterp::init(std::nullptr_t, const py::array_t<double>& x, const py::array_t<double>& values, bool coord_axis_first) {
+PyScatteredInterp::CLS PyScatteredInterp::init(std::nullptr_t, const c_array_t& x, const c_array_t& values, bool coord_axis_first) {
     auto x_c = c_array_t(x);
     auto v_c = c_array_t(values);
     const int ndim = (x_c.ndim() == 1) ? 1 : int(x_c.shape(1));
     return {x_c.data(), as_field_values(v_c), ndim, coord_axis_first};
 }
 
-PyScatteredInterp::CLS PyScatteredInterp::init(std::nullptr_t, const PyDelaunay& tri, const py::array_t<double>& values, bool coord_axis_first) {
+PyScatteredInterp::CLS PyScatteredInterp::init(std::nullptr_t, const PyDelaunay& tri, const c_array_t& values, bool coord_axis_first) {
     auto v_c = c_array_t(values);
     return {tri.tri(), as_field_values(v_c), coord_axis_first};
 }
@@ -367,7 +367,7 @@ py::object PyScatteredInterp::py_delaunay_obj(const CLS& self){
     //TODO: do nat cast to pointer, return actual object, but in a memory-cheap way.
 }
 
-std::nullptr_t PyScatteredInterp::parse_args(const py::array_t<double>& x, const py::array_t<double>& values, bool coord_axis_first){
+std::nullptr_t PyScatteredInterp::parse_args(const c_array_t& x, const c_array_t& values, bool coord_axis_first){
     if (x.ndim() > 2){
         throw py::value_error("ScatteredNdInterpolator requires a 2D array for the input points (or optionally a 1D array for 1D fields)");
     }else if ((values.ndim() == 1 || coord_axis_first) && values.shape(0) != x.shape(0)){
@@ -380,7 +380,7 @@ std::nullptr_t PyScatteredInterp::parse_args(const py::array_t<double>& x, const
     return nullptr;
 }
 
-std::nullptr_t PyScatteredInterp::parse_tri_args(const PyDelaunay& tri, const py::array_t<double>& values, bool coord_axis_first){
+std::nullptr_t PyScatteredInterp::parse_tri_args(const PyDelaunay& tri, const c_array_t& values, bool coord_axis_first){
     if (values.ndim() == 0){
         throw py::value_error("Values must be at least a 1D array, not scalar");
     }else if(values.ndim() > 1 && !coord_axis_first && tri.py_npoints() != int(values.shape(values.ndim()-1))){

@@ -17,7 +17,7 @@ py::class_<RegularGridInterpolator, VirtualNdInterpolator>(m, "RegularGridInterp
     .def_property_readonly("grid", &PyRegGridInterp::get_grid);
 
 py::class_<PyDelaunay>(m, "DelaunayTri")
-    .def(py::init<py::array_t<double>>(),
+    .def(py::init<c_array_t>(),
         py::arg("points"))
     .def(py::pickle([](const PyDelaunay& obj){ return obj.py_get_state(); },
         &PyDelaunay::py_set_state))

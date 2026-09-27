@@ -21,22 +21,22 @@ py::object PyScalarField::py_value_at(const VirtualNdInterpolator& self, const p
 //                              PyRegScalarField
 // ============================================================================================
 
-py::array_t<double> PyRegScalarField::parse_values(const py::array_t<double>& values, const py::args& py_grid){
+c_array_t PyRegScalarField::parse_values(const c_array_t& values, const py::args& py_grid){
     if (size_t(values.ndim()) != py_grid.size()){
         throw py::value_error("Values array must have the same number of dimensions as the number of grid arrays");
     }
     return values;
 }
 
-PyRegScalarField::PyRegScalarField(const py::array_t<double>& values, const py::args& py_grid) : RGBase(PyRegGridInterp::init_main(parse_values(values, py_grid), py_grid)) {}
+PyRegScalarField::PyRegScalarField(const c_array_t& values, const py::args& py_grid) : RGBase(PyRegGridInterp::init_main(parse_values(values, py_grid), py_grid)) {}
 
 // ============================================================================================
 //                                      PyScatteredField
 // ============================================================================================
 
-PyScatteredField::PyScatteredField(const py::array_t<double>& x, const py::array_t<double>& values) : PyScatteredField(parse_values(values), x, values) {}
+PyScatteredField::PyScatteredField(const c_array_t& x, const c_array_t& values) : PyScatteredField(parse_values(values), x, values) {}
 
-PyScatteredField::PyScatteredField(const PyDelaunay& tri, const py::array_t<double>& values) : PyScatteredField(parse_values(values), tri.tri(), values) {}
+PyScatteredField::PyScatteredField(const PyDelaunay& tri, const c_array_t& values) : PyScatteredField(parse_values(values), tri.tri(), values) {}
 
 py::object PyScatteredField::py_delaunay() const { return py::cast(PyDelaunay(this->tri())); }
 
@@ -44,16 +44,16 @@ py::object PyScatteredField::py_points() const { return py::cast(this->points())
 
 py::object PyScatteredField::py_values() const { return py::cast(this->values()); }
 
-std::nullptr_t PyScatteredField::parse_values(const py::array_t<double>& values){
+std::nullptr_t PyScatteredField::parse_values(const c_array_t& values){
     if (values.ndim() != 1){
         throw py::value_error("Values array must be 1D for ScatteredScalarField");
     }
     return nullptr;
 }
 
-PyScatteredField::PyScatteredField(std::nullptr_t, const py::array_t<double>& x, const py::array_t<double>& values) : InterpBase(PyScatteredInterp::init_main(x, values)) {}
+PyScatteredField::PyScatteredField(std::nullptr_t, const c_array_t& x, const c_array_t& values) : InterpBase(PyScatteredInterp::init_main(x, values)) {}
 
-PyScatteredField::PyScatteredField(std::nullptr_t, const PyDelaunay& tri, const py::array_t<double>& values) : InterpBase(PyScatteredInterp::init_tri(tri, values)) {}
+PyScatteredField::PyScatteredField(std::nullptr_t, const PyDelaunay& tri, const c_array_t& values) : InterpBase(PyScatteredInterp::init_tri(tri, values)) {}
 
 // ============================================================================================
 //                              PyVecField
@@ -67,7 +67,7 @@ void PyVecField::check_coords(const CLS& self, const double* coords){
     }
 }
 
-py::object PyVecField::py_streamline(const CLS& self, const py::array_t<double>& q0, double length, double rtol, double atol, double min_step, const py::object& max_step, double stepsize, int direction, const py::object& t_eval, const py::str& method, bool normalized){
+py::object PyVecField::py_streamline(const CLS& self, const c_array_t& q0, double length, double rtol, double atol, double min_step, const py::object& max_step, double stepsize, int direction, const py::object& t_eval, const py::str& method, bool normalized){
 
     if (q0.ndim() != 1 || q0.shape(0) != self.ndim()){
         throw py::value_error("Initial conditions must be a 1D array of length " + std::to_string(self.ndim()));
@@ -94,7 +94,7 @@ py::object PyVecField::py_streamline(const CLS& self, const py::array_t<double>&
     }
 }
 
-py::object PyVecField::py_streamline_ode(const CLS& self, const py::array_t<double>& q0, double rtol, double atol, double min_step, const py::object& max_step, double stepsize, int direction, const py::str& method, bool normalized){
+py::object PyVecField::py_streamline_ode(const CLS& self, const c_array_t& q0, double rtol, double atol, double min_step, const py::object& max_step, double stepsize, int direction, const py::str& method, bool normalized){
     if (direction != 1 && direction != -1){
         throw py::value_error("Direction must be either 1 (forward) or -1 (backward)");
     } else if (q0.ndim() != 1 || q0.shape(0) != self.ndim()) {
@@ -114,7 +114,7 @@ py::object PyVecField::py_streamline_ode(const CLS& self, const py::array_t<doub
 //                              PyRegVecField
 // ============================================================================================
 
-void PyRegVecField::parse_values(const py::array_t<double>& values, const py::args& py_grid){
+void PyRegVecField::parse_values(const c_array_t& values, const py::args& py_grid){
     if (size_t(values.shape(0)) != py_grid.size()){
         throw py::value_error("Size of values along axis 0 (number of vector components) of the vector field must be equal to the number of grid arrays");
     }else if (py_grid.size() < 2){
@@ -123,7 +123,7 @@ void PyRegVecField::parse_values(const py::array_t<double>& values, const py::ar
 }
 
 
-PyRegVecField::CLS PyRegVecField::init_main(const py::array_t<double>& values, const py::args& py_grid, const std::string& coord_type){
+PyRegVecField::CLS PyRegVecField::init_main(const c_array_t& values, const py::args& py_grid, const std::string& coord_type){
     parse_values(values, py_grid);
     auto grid = RGBase::parse_args(values, py_grid, false);
     auto values_c = py::array_t<double, py::array::c_style | py::array::forcecast>(values);
@@ -187,7 +187,7 @@ py::object PyRegVecField::component(const CLS& self, int i){
 }
 
 
-PyScatVecField::CLS PyScatVecField::init(const py::array_t<double>& x, const py::array_t<double>& values){
+PyScatVecField::CLS PyScatVecField::init(const c_array_t& x, const c_array_t& values){
     parse_values(values);
     SCBase::parse_args(x, values, false);
     auto x_c = c_array_t(x);
@@ -198,14 +198,14 @@ PyScatVecField::CLS PyScatVecField::init(const py::array_t<double>& x, const py:
 }
 
 
-PyScatVecField::CLS PyScatVecField::init_tri(const PyDelaunay& tri, const py::array_t<double>& values){
+PyScatVecField::CLS PyScatVecField::init_tri(const PyDelaunay& tri, const c_array_t& values){
     parse_values(values);
     SCBase::parse_tri_args(tri, values, false);
     auto v_c = c_array_t(values);
     return {tri.tri(), as_field_values(v_c), false};
 }
 
-void PyScatVecField::parse_values( const py::array_t<double>& values){
+void PyScatVecField::parse_values( const c_array_t& values){
     if (values.ndim() != 2){
         throw py::value_error("Values array must be 2D for ScatteredVectorField");
     }

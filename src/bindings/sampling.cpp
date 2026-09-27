@@ -41,7 +41,7 @@ py::class_<VirtualVectorField>(m, "SampledVectorField")
         py::arg("normalized")=true, py::keep_alive<0, 1>());
 
 py::class_<PyRegScalarField, PyScalarField, RegularGridInterpolator>(m, "RegularGridScalarField")
-    .def(py::init<py::array_t<double>, py::args>(),
+    .def(py::init<c_array_t, py::args>(),
         py::arg("values"));
 
 
@@ -62,10 +62,10 @@ py::class_<RegularVectorField, VirtualVectorField, RegularGridInterpolator>(m, "
         py::arg("method")="RK45");
         
 py::class_<PyScatteredField, PyScalarField, ScatteredNdInterpolator>(m, "ScatteredScalarField")
-    .def(py::init<py::array_t<double>, py::array_t<double>>(),
+    .def(py::init<c_array_t, c_array_t>(),
         py::arg("points"),
         py::arg("values"))
-    .def(py::init<PyDelaunay, py::array_t<double>>(),
+    .def(py::init<PyDelaunay, c_array_t>(),
         py::arg("tri"),
         py::arg("values"))
     .def_property_readonly("points", &PyScatteredField::py_points)

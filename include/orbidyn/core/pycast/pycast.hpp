@@ -201,10 +201,11 @@ struct has_array_interface<T, std::void_t<
     decltype(std::declval<const T>().shape(size_t(0)))
 >> : std::true_type {};
 
+
 template <typename ArrayType>
 struct type_caster<ArrayType, std::enable_if_t<
     has_array_interface<ArrayType>::value &&
-    !std::is_base_of_v<py::array_t<typename ArrayType::value_type>, ArrayType>>> {
+    !is_pyobject<ArrayType>::value>> {
 
     PYBIND11_TYPE_CASTER(ArrayType, _("ArrayType"));
 
