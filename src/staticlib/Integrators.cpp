@@ -11,15 +11,16 @@ namespace ode::python {
 
 PyConstSolver::PyConstSolver(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jac, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type, const std::string& method) : DtypeDispatcher(scalar_type){
     this->init_scalar_type();
+    this->shape = shape_of(py_q0);
     dispatch_scalar_type<void>(this->scalar_type, [&]<typename T>(){
         this->is_lowlevel = init_ode_data<T>([&](auto ode_obj, EventList<T>&& events){
-            std::vector<T> q0 = to_vector<T>(py_q0);
+            std::vector<T> q0 = to_vector<T>(flatten_state(py_q0));
             this->integrator = make_rich_vsolver<T>(getIntegrator(method), std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events));
-        }, f, jac, shape_of(py_q0), py_args, py_events);
+        }, f, jac, this->shape, py_args, py_events);
     });
 }
 
-PyConstSolver::PyConstSolver(integrator_t solver, bool is_lowlevel) : DtypeDispatcher(visit_scalar_type(solver)), integrator(std::move(solver)), is_lowlevel(is_lowlevel){}
+PyConstSolver::PyConstSolver(integrator_t solver, pyshape_t state_shape, bool is_lowlevel) : DtypeDispatcher(visit_scalar_type(solver)), integrator(std::move(solver)), shape(std::move(state_shape)), is_lowlevel(is_lowlevel){}
 
 PyConstSolver::PyConstSolver(const std::string& scalar_type) : DtypeDispatcher(scalar_type){
     this->init_scalar_type();
@@ -44,8 +45,7 @@ py::object PyConstSolver::t0() const{
 
 py::object PyConstSolver::q0() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        const T* q0_ptr = solver->get_ics().vector();
-        return py::cast(View1D<T>(q0_ptr, solver->get_nsys()));
+        return py::cast(as_state<T>(solver->get_ics().vector(), solver->get_nsys(), this->shape));
     )
 }
 
@@ -69,13 +69,13 @@ py::object PyConstSolver::t_old() const{
 
 py::object PyConstSolver::q() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_vector());
+        return py::cast(as_state<T>(solver->get_vector().data(), solver->get_nsys(), this->shape));
     )
 }
 
 py::object PyConstSolver::q_old() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_old_vector());
+        return py::cast(as_state<T>(solver->get_old_vector().data(), solver->get_nsys(), this->shape));
     )
 }
 
@@ -125,13 +125,14 @@ void PyConstSolver::show_state(int digits) const{
 py::object PyConstSolver::py_rhs(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
+        py::iterable q_flat = flatten_state(py_q);
         Array1D<T> tmp(2*nsys);
-        if (size_t(py::len(py_q)) != nsys){
+        if (size_t(py::len(q_flat)) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
-        pass_values(tmp.data()+nsys, py_q, nsys);
+        pass_values(tmp.data()+nsys, q_flat, nsys);
         solver->get_rhs(tmp.data(), py::cast<T>(t), tmp.data()+nsys);
-        return py::cast(View1D<T>(tmp.data(), nsys));
+        return py::cast(as_state<T>(tmp.data(), nsys, this->shape));
     )
 }
 
@@ -140,10 +141,11 @@ py::object PyConstSolver::py_jac(const py::object& t, const py::iterable& py_q) 
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
         Array2D<T> jac(nsys, nsys);
-        if (size_t(py::len(py_q)) != nsys){
+        py::iterable q_flat = flatten_state(py_q);
+        if (size_t(py::len(q_flat)) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
-        pass_values(q.data(), py_q, nsys);
+        pass_values(q.data(), q_flat, nsys);
         solver->get_jac(jac.data(), t.cast<T>(), q.data(), nullptr);
         for (size_t i=0; i<nsys; i++){
             for (size_t j=i+1; j<nsys; j++){
@@ -157,16 +159,17 @@ py::object PyConstSolver::py_jac(const py::object& t, const py::iterable& py_q) 
 py::tuple PyConstSolver::timeit_rhs(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
+        py::iterable q_flat = flatten_state(py_q);
         Array1D<T> tmp(2*nsys);
-        if (size_t(py::len(py_q)) != nsys){
+        if (size_t(py::len(q_flat)) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
-        pass_values(tmp.data()+nsys, py_q, nsys);
+        pass_values(tmp.data()+nsys, q_flat, nsys);
         auto start = std::chrono::high_resolution_clock::now();
         solver->get_rhs(tmp.data(), py::cast<T>(t), tmp.data()+nsys);
         auto end = std::chrono::high_resolution_clock::now();
         std::chrono::duration<double, std::milli> duration = end - start;
-        return py::make_tuple(py::cast(duration.count()), py::cast(View1D<T>(tmp.data(), nsys)));
+        return py::make_tuple(py::cast(duration.count()), py::cast(as_state<T>(tmp.data(), nsys, this->shape)));
     )
 }
 
@@ -176,10 +179,11 @@ py::tuple PyConstSolver::timeit_jac(const py::object& t, const py::iterable& py_
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
         Array2D<T> jac(nsys, nsys);
-        if (size_t(py::len(py_q)) != nsys){
+        py::iterable q_flat = flatten_state(py_q);
+        if (size_t(py::len(q_flat)) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
-        pass_values(q.data(), py_q, nsys);
+        pass_values(q.data(), q_flat, nsys);
         auto start = std::chrono::steady_clock::now();
         solver->get_jac(jac.data(), t.cast<T>(), q.data(), nullptr);
         auto end = std::chrono::steady_clock::now();
@@ -201,7 +205,7 @@ py::str PyConstSolver::status() const{
 }
 
 py::object PyConstSolver::copy() const{
-    return py::cast(PySolver(this->integrator, this->is_lowlevel));
+    return py::cast(PySolver(this->integrator, this->shape, this->is_lowlevel));
 }
 
 bool PyConstSolver::py_at_event(const py::object& event_name) const{
@@ -347,7 +351,7 @@ bool PySolver::set_ics(const py::object& t0, const py::iterable& py_q0, const py
         if (dt.cast<T>() < 0){
             throw py::value_error("Stepsize cannot be negative");
         }
-        std::vector<T> q0 = to_vector<T>(py_q0);
+        std::vector<T> q0 = to_vector<T>(flatten_state(py_q0));
         if (size_t(q0.size()) != solver->get_nsys()){
             throw py::value_error("Invalid size of initial condition array");
         }

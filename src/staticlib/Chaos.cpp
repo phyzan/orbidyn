@@ -16,20 +16,23 @@ PyVarSolver::PyVarSolver(const py::object& f, const py::object& jac, const py::o
     dispatch_scalar_type<void>(this->scalar_type,
         [&]<typename T>(){
 
-            size_t nsys = size_t(py::len(q0_main));
+            py::iterable q0_flat = flatten_state(q0_main);
+            py::iterable dq0_flat = flatten_state(delta_q0);
+            size_t nsys = size_t(py::len(q0_flat));
 
             if (jac.is_none()){
                 throw py::value_error("Variational solvers require an exact jacobian for the original system");
-            } else if (size_t(py::len(delta_q0)) != nsys){
+            } else if (size_t(py::len(dq0_flat)) != nsys){
                 throw py::value_error("The variational state vector delta_q0 must have the same size as q0");
             }
 
             // ------- fill the initial state vector with q0 and delta_q0 -------
             std::vector<T> vector(2*nsys);
-            pass_values(vector.data(), q0_main, nsys);
-            pass_values(vector.data()+nsys, delta_q0, nsys);
+            pass_values(vector.data(), q0_flat, nsys);
+            pass_values(vector.data()+nsys, dq0_flat, nsys);
             // ----------------------------------------------------------
             pyshape_t main_shape_state = {py::ssize_t(nsys)};
+            this->shape = {py::ssize_t(2*nsys)};
             this->is_lowlevel = init_ode_data<T>([&](auto ode_obj, EventList<T>&& events){
                 this->integrator = make_variational_solver<T>(getIntegrator(method), std::move(ode_obj), t0.cast<T>(), View1D{vector.data(), nsys}, View1D{vector.data()+nsys, nsys}, period.cast<T>(), rtol.cast<T>(), atol.cast<T>(), min_step.cast<T>(), (max_step.is_none() ? 0 : max_step.cast<T>()), stepsize.cast<T>(), dir, std::move(events));
             }, f, jac, main_shape_state, py_args, py_events);
@@ -37,7 +40,7 @@ PyVarSolver::PyVarSolver(const py::object& f, const py::object& jac, const py::o
     );
 }
 
-PyVarSolver::PyVarSolver(integrator_t solver, bool is_lowlevel) : PySolver(std::move(solver), is_lowlevel) {}
+PyVarSolver::PyVarSolver(integrator_t solver, pyshape_t state_shape, bool is_lowlevel) : PySolver(std::move(solver), std::move(state_shape), is_lowlevel) {}
 
 py::object PyVarSolver::py_logksi() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
@@ -78,18 +81,20 @@ py::object PyVarSolver::copy() const{
 PyVarODE::PyVarODE(const py::object& f, const py::object& jac, const py::object& t0, const py::iterable& q0_main, const py::iterable& delta_q0, const py::object& period, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type, const py::str& method) : PyODE(scalar_type){
     dispatch_scalar_type<void>(this->scalar_type,
         [&]<typename T>(){
-            size_t nsys = size_t(py::len(q0_main));
+            py::iterable q0_flat = flatten_state(q0_main);
+            py::iterable dq0_flat = flatten_state(delta_q0);
+            size_t nsys = size_t(py::len(q0_flat));
 
             if (jac.is_none()){
                 throw py::value_error("Variational solvers require an exact jacobian for the original system");
-            } else if (size_t(py::len(delta_q0)) != nsys){
+            } else if (size_t(py::len(dq0_flat)) != nsys){
                 throw py::value_error("The variational state vector delta_q0 must have the same size as q0");
             }
 
             // ------- fill the initial state vector with q0 and delta_q0 -------
             std::vector<T> vector(2*nsys);
-            pass_values(vector.data(), q0_main, nsys);
-            pass_values(vector.data()+nsys, delta_q0, nsys);
+            pass_values(vector.data(), q0_flat, nsys);
+            pass_values(vector.data()+nsys, dq0_flat, nsys);
             // ----------------------------------------------------------
             pyshape_t full_shape_state = {py::ssize_t(2*nsys)};
             pyshape_t main_shape_state = {py::ssize_t(nsys)};

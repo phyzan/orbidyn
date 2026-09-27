@@ -14,7 +14,7 @@ struct PyVarSolver : public PySolver{
 
     // TODO : should use something like `variational_integrator_t` to ensure that the variant is of
     // the correct type, but for now we just assume that the user knows what they are doing
-    PyVarSolver(integrator_t solver, bool is_lowlevel);
+    PyVarSolver(integrator_t solver, pyshape_t state_shape, bool is_lowlevel);
 
     DEFAULT_RULE_OF_FOUR(PyVarSolver)
 

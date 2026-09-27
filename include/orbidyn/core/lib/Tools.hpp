@@ -13,6 +13,11 @@ namespace py = pybind11;
 using pyshape_t = std::vector<py::ssize_t>;
 
 template<typename T>
+using CArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
+
+using c_array_t = CArray<double>;
+
+template<typename T>
 using raw_pyrhs_t = void(*)(T*, const T&, const T*, const T*); // f(t, q, args) -> array
 
 template<typename T>
@@ -57,7 +62,7 @@ struct PyFuncWrapper : DtypeDispatcher {
     size_t n_args;
     size_t n_out;
 
-    PyFuncWrapper(const py::capsule& obj, py::ssize_t Nsys, const py::array_t<py::ssize_t>& output_shape, py::ssize_t Nargs, const std::string& scalar_type);
+    PyFuncWrapper(const py::capsule& obj, py::ssize_t Nsys, const CArray<py::ssize_t>& output_shape, py::ssize_t Nargs, const std::string& scalar_type);
 
     py::object call(const py::object& t, const py::iterable& py_q, const py::args& py_args) const;
 };
@@ -79,6 +84,32 @@ template<typename T>
 py::array_t<T> array(T* data, const pyshape_t& shape);
 
 pyshape_t shape_of(const py::object& obj);
+
+inline py::iterable flatten_state(const py::iterable& obj){
+    if (py::isinstance<py::array>(obj)){
+        if (py::array arr = py::array::ensure(obj, py::array::c_style)){
+            if (arr.ndim() != 1){
+                return arr.attr("reshape")(-1).cast<py::iterable>();
+            }
+            return arr;
+        }
+    }
+    return obj;
+}
+
+
+template<typename T>
+inline View<T> as_state(const T* data, size_t nsys, const pyshape_t& shape){
+    size_t total = 1;
+    for (py::ssize_t dim : shape){
+        total *= size_t(dim);
+    }
+    if (shape.empty() || total != nsys){
+        const py::ssize_t flat = py::ssize_t(nsys);
+        return View<T>(data, &flat, 1);
+    }
+    return View<T>(data, shape.data(), shape.size());
+}
 
 template<typename T>
 NDSPAN_INLINE void pass_values(T* out, const py::iterable& obj, size_t n){
@@ -112,16 +143,17 @@ inline void arrcpy(T* dst, const T* src, size_t size){
 
 template<typename T>
 inline void rhs_pythonic(T* out, const T& t, const T* q, const pyshape_t& shape, const py::tuple& py_args, const py::function& rhs_func) {
-    py::array_t<T> pyres = rhs_func(t, py::array_t<T>(shape, q), *py_args);
-    auto r = pyres.template unchecked<1>();
-    for (py::ssize_t i = 0; i < r.shape(0); i++) {
-        out[i] = r(i);
+    CArray<T> pyres = rhs_func(t, py::array_t<T>(shape, q), *py_args);
+
+    const T* r = pyres.data();
+    for (py::ssize_t i = 0; i < pyres.size(); i++) {
+        out[i] = r[i];
     }
 }
 
 template<typename T>
 inline void jac_pythonic(T* out, const T& t, const T* q, const pyshape_t& shape, const py::tuple& py_args, const py::function& rhs_func) {
-    py::array_t<T> pyres = rhs_func(t, py::array_t<T>(shape, q), *py_args);
+    CArray<T> pyres = rhs_func(t, py::array_t<T>(shape, q), *py_args);
     auto r = pyres.template unchecked<2>();
     py::ssize_t n = r.shape(0);
     ndspan::MutView<T, ndspan::Layout::F, 0, 0> jm{out, n, n}; // Column-major layout
@@ -142,7 +174,7 @@ inline T objfun_pythonic(const T& t, const T* q, const pyshape_t& shape, const p
 template<>
 inline void rhs_pythonic<mpreal_t>(mpreal_t* out, const mpreal_t& t, const mpreal_t* q, const pyshape_t& shape, const py::tuple& py_args, const py::function& rhs_func) {
     py::iterable pyres = rhs_func(t, View<mpreal_t>(q, shape.data(), shape.size()), *py_args);
-    std::vector<mpreal_t> arr = to_vector<mpreal_t>(pyres);
+    std::vector<mpreal_t> arr = to_vector<mpreal_t>(flatten_state(pyres));
     arrcpy(out, arr.data(), arr.size());
 }
 

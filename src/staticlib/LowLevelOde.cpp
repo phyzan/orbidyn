@@ -16,7 +16,7 @@ PyODE::PyODE(const py::object& f, const py::object& t0, const py::iterable& py_q
     this->state_dims = shape_of(py_q0);
     ORBIDYN_MODIFY_ODE_VARIANT(
         this->is_lowlevel = init_ode_data<T>([&](auto ode_obj, EventList<T>&& events){
-            std::vector<T> q0 = to_vector<T>(py_q0);
+            std::vector<T> q0 = to_vector<T>(flatten_state(py_q0));
             ode_ptr = pbox::make_box<crafted::ODE<T>>(std::move(ode_obj), py::cast<T>(t0), View1D{q0.data(), q0.size()}, py::cast<T>(rtol), py::cast<T>(atol), py::cast<T>(min_step), (max_step.is_none() ? 0 : max_step.cast<T>()), py::cast<T>(stepsize), dir, std::move(events), getIntegrator(method));
         }, f, jacobian, this->state_dims, py_args, py_events);
     )
@@ -167,15 +167,15 @@ py::object PyODE::solver_copy() const{
 
         switch (ode_ptr->solver()->get_method()){
             case Stepper::RK45:
-                return py::cast(PyRK45(std::move(rich_clone), this->is_lowlevel));
+                return py::cast(PyRK45(std::move(rich_clone), this->state_dims, this->is_lowlevel));
             case Stepper::DOP853:
-                return py::cast(PyDOP853(std::move(rich_clone), this->is_lowlevel));
+                return py::cast(PyDOP853(std::move(rich_clone), this->state_dims, this->is_lowlevel));
             case Stepper::RK23:
-                return py::cast(PyRK23(std::move(rich_clone), this->is_lowlevel));
+                return py::cast(PyRK23(std::move(rich_clone), this->state_dims, this->is_lowlevel));
             case Stepper::BDF:
-                return py::cast(PyBDF(std::move(rich_clone), this->is_lowlevel));
+                return py::cast(PyBDF(std::move(rich_clone), this->state_dims, this->is_lowlevel));
             case Stepper::RK4:
-                return py::cast(PyRK4(std::move(rich_clone), this->is_lowlevel));
+                return py::cast(PyRK4(std::move(rich_clone), this->state_dims, this->is_lowlevel));
             default:
                 throw py::value_error("Unregistered solver!");
         }

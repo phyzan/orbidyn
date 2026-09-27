@@ -92,6 +92,8 @@ find_package(OpenMP)
 add_library(orbidyn_headers INTERFACE)
 target_include_directories(orbidyn_headers INTERFACE include)
 target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazex::mpfr pybind11::pybind11 Python::Module)
+
+target_compile_definitions(orbidyn_headers INTERFACE PYBIND11_DETAILED_ERROR_MESSAGES)
 target_compile_options(orbidyn_headers INTERFACE ${ORBIDYN_COMPILE_OPTIONS})
 target_link_options(orbidyn_headers INTERFACE ${ORBIDYN_LINK_OPTIONS})
 if(OpenMP_FOUND)

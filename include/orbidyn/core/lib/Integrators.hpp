@@ -29,9 +29,9 @@ struct PyConstSolver : DtypeDispatcher {
 
     PyConstSolver(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jac, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type, const std::string& method);
 
-    PyConstSolver(const std::string& scalar_type);
+    PyConstSolver(const std::string& scalar_type); //derived classes manage integrator and shape creation
 
-    PyConstSolver(integrator_t solver, bool is_lowlevel);
+    PyConstSolver(integrator_t solver, pyshape_t state_shape, bool is_lowlevel);
 
     DEFAULT_RULE_OF_FOUR(PyConstSolver)
 
@@ -84,6 +84,7 @@ struct PyConstSolver : DtypeDispatcher {
     virtual             py::object  copy() const;
 
     integrator_t    integrator;
+    pyshape_t       shape;
     bool            is_lowlevel;
 };
 
@@ -120,7 +121,7 @@ struct CRTPSolverLayer : public PySolver {
 
     static constexpr const char* method = Solver::method_name;
 
-    CRTPSolverLayer(integrator_t solver, bool is_lowlevel) : PySolver(std::move(solver), is_lowlevel) {}
+    CRTPSolverLayer(integrator_t solver, pyshape_t state_shape, bool is_lowlevel) : PySolver(std::move(solver), std::move(state_shape), is_lowlevel) {}
 
     CRTPSolverLayer(const py::object& f, const py::object& t0, const py::iterable& py_q0, const py::object& jac, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type)
         : PySolver(f, t0, py_q0, jac, rtol, atol, min_step, max_step, stepsize, dir, py_args, py_events, scalar_type, method) {}

@@ -32,7 +32,7 @@ py::class_<DerivedSolver, PySolver> bind_stepper(py::module_& m, const char* nam
 PYBIND11_MODULE(integrators, m) {
 
 py::class_<PyFuncWrapper>(m, "LowLevelFunction")
-    .def(py::init<py::capsule, py::ssize_t, py::array_t<py::ssize_t>, py::ssize_t, py::str>(),
+    .def(py::init<py::capsule, py::ssize_t, CArray<py::ssize_t>, py::ssize_t, py::str>(),
         py::arg("pointer"),
         py::arg("input_size"),
         py::arg("output_shape"),
