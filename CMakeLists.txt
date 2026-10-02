@@ -36,9 +36,12 @@ if(DEBUG)
     set(ORBIDYN_CODEGEN_FLAGS -O0 -g3 -UNDEBUG)
 else()
     set(ORBIDYN_CODEGEN_FLAGS
-        -O3 -DNDEBUG -g0 -fno-math-errno -fno-trapping-math
+        -O3 -flto=auto -funroll-loops -DNDEBUG -g0 -fno-math-errno -fno-trapping-math
         -ffunction-sections -fdata-sections
     )
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND ORBIDYN_CODEGEN_FLAGS -finline-functions)
+    endif()
     set(ORBIDYN_LINK_OPTIONS -Wl,--gc-sections -Wl,--as-needed)
 endif()
 list(APPEND ORBIDYN_CODEGEN_FLAGS -${ORBIDYN_ARCH_FLAG} -fvisibility=hidden)

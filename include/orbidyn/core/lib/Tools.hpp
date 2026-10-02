@@ -83,18 +83,25 @@ py::array_t<Scalar> to_numpy(const ArrayType& array, const pyshape_t& state_shap
 template<typename T>
 py::array_t<T> array(T* data, const pyshape_t& shape);
 
-pyshape_t shape_of(const py::object& obj);
+pyshape_t shape_of(const py::iterable& obj);
 
-inline py::iterable flatten_state(const py::iterable& obj){
-    if (py::isinstance<py::array>(obj)){
-        if (py::array arr = py::array::ensure(obj, py::array::c_style)){
-            if (arr.ndim() != 1){
-                return arr.attr("reshape")(-1).cast<py::iterable>();
-            }
-            return arr;
-        }
+/**
+ * @brief The given object as a C-contiguous py::array, with its shape preserved.
+ */
+inline py::array as_array(const py::iterable& obj){
+    py::array arr = py::array::ensure(obj, py::array::c_style);
+    if (!arr){
+        throw py::value_error("Could not interpret the given object as an array of numbers");
     }
-    return obj;
+    return arr;
+}
+
+/**
+ * @brief The given state as a flat, C-contiguous py::array, whatever shape it arrived in.
+ */
+inline py::array flatten_state(const py::iterable& obj){
+    py::array arr = as_array(obj);
+    return arr.ndim() == 1 ? arr : arr.attr("reshape")(-1).cast<py::array>();
 }
 
 
@@ -181,10 +188,22 @@ inline void rhs_pythonic<mpreal_t>(mpreal_t* out, const mpreal_t& t, const mprea
 
 template<>
 inline void jac_pythonic<mpreal_t>(mpreal_t* out, const mpreal_t& t, const mpreal_t* q, const pyshape_t& shape, const py::tuple& py_args, const py::function& rhs_func) {
-    py::array pyres = rhs_func(t, View<mpreal_t>(q, shape.data(), shape.size()), *py_args);
-    auto r = pyres.template unchecked<mpreal_t, 2>();
-    py::ssize_t n = r.shape(0);
+
+    py::iterable pyres = rhs_func(t, View<mpreal_t>(q, shape.data(), shape.size()), *py_args);
+    std::vector<mpreal_t> arr = to_vector<mpreal_t>(flatten_state(pyres));
+
+    // flatten_state has collapsed the n x n jacobian to one dimension, so the system size
+    // comes from the state shape rather than from the result
+    py::ssize_t n = 1;
+    for (py::ssize_t dim : shape){
+        n *= dim;
+    }
+    if (py::ssize_t(arr.size()) != n*n){
+        throw py::value_error("The jacobian of a system of size " + std::to_string(n) + " must have " + std::to_string(n*n) + " elements, not " + std::to_string(arr.size()));
+    }
+
     ndspan::MutView<mpreal_t, ndspan::Layout::F, 0, 0> jm{out, n, n}; // Column-major layout
+    ndspan::View2D<mpreal_t> r{arr.data(), n, n};
     for (py::ssize_t j = 0; j < n; j++){
         for (py::ssize_t i = 0; i < n; i++) {
             jm(i, j) = r(i, j);
@@ -200,5 +219,6 @@ inline mpreal_t objfun_pythonic<mpreal_t>(const mpreal_t& t, const mpreal_t* q, 
 }
 
 } // namespace ode::python
+
 
 #endif // ORBIDYN_TOOLS_HPP

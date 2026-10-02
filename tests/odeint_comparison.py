@@ -1,4 +1,7 @@
 from orbidyn import *
+import matplotlib.pyplot as plt
+from scipy.integrate import solve_ivp
+import time
 
 t, x, y, mu = symbols('t, x, y, mu')
 
@@ -59,12 +62,10 @@ result_lowlevel = ode_lowlevel.integrate(400)
 result_pythonic = ode_pythonic.integrate(400)
 
 
-from scipy.integrate import solve_ivp
-import time
 
-ti = time.time()
+ti = time.perf_counter()
 result_scipy = solve_ivp(f_py, (0, 400), [1, 2], jac=jac_py, method="BDF", rtol=1e-13, atol=1e-13, args=(500,))
-tf = time.time()
+tf = time.perf_counter()
 
 
 
@@ -76,11 +77,6 @@ print("As expected, the last two cases have the same performanace")
 print("Speedup                               : x", (tf-ti)/result_lowlevel.runtime)
 
 
-
-
-
-
-import matplotlib.pyplot as plt
 
 class Orbit(LowLevelODE):
 
