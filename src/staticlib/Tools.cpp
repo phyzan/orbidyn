@@ -28,7 +28,7 @@ py::object PyFuncWrapper::call(const py::object& t, const py::iterable& py_q, co
 
     return std::visit([&]<typename T>(const raw_pyrhs_t<T>& rhs){
         // TODO : minimize memory allocations
-        std::vector<T> q = to_vector<T>(py_q);
+        std::vector<T> q = to_vector<T>(flatten_state(py_q));
         if (size_t(q.size()) != n_sys || py_args.size() != n_args){
             throw py::value_error("Invalid array sizes in ode function call");
         }
@@ -64,8 +64,8 @@ pyshape_t getShape(const py::ssize_t& dim1, const pyshape_t& shape){
     return result;
 }
 
-pyshape_t shape_of(const py::object& obj) {
-    py::array arr = py::array::ensure(obj);
+pyshape_t shape_of(const py::iterable& obj) {
+    py::array arr = as_array(obj);
     const ssize_t* shape_ptr = arr.shape();  // Pointer to shape data
     auto ndim = static_cast<size_t>(arr.ndim());  // Number of dimensions
     pyshape_t res(shape_ptr, shape_ptr + ndim);

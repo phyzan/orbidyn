@@ -16,13 +16,13 @@ PyVarSolver::PyVarSolver(const py::object& f, const py::object& jac, const py::o
     dispatch_scalar_type<void>(this->scalar_type,
         [&]<typename T>(){
 
-            py::iterable q0_flat = flatten_state(q0_main);
-            py::iterable dq0_flat = flatten_state(delta_q0);
-            size_t nsys = size_t(py::len(q0_flat));
+            py::array q0_flat = flatten_state(q0_main);
+            py::array dq0_flat = flatten_state(delta_q0);
+            size_t nsys = size_t(q0_flat.size());
 
             if (jac.is_none()){
                 throw py::value_error("Variational solvers require an exact jacobian for the original system");
-            } else if (size_t(py::len(dq0_flat)) != nsys){
+            } else if (size_t(dq0_flat.size()) != nsys){
                 throw py::value_error("The variational state vector delta_q0 must have the same size as q0");
             }
 
@@ -81,13 +81,13 @@ py::object PyVarSolver::copy() const{
 PyVarODE::PyVarODE(const py::object& f, const py::object& jac, const py::object& t0, const py::iterable& q0_main, const py::iterable& delta_q0, const py::object& period, const py::object& rtol, const py::object& atol, const py::object& min_step, const py::object& max_step, const py::object& stepsize, int dir, const py::iterable& py_args, const py::iterable& py_events, const std::string& scalar_type, const py::str& method) : PyODE(scalar_type){
     dispatch_scalar_type<void>(this->scalar_type,
         [&]<typename T>(){
-            py::iterable q0_flat = flatten_state(q0_main);
-            py::iterable dq0_flat = flatten_state(delta_q0);
-            size_t nsys = size_t(py::len(q0_flat));
+            py::array q0_flat = flatten_state(q0_main);
+            py::array dq0_flat = flatten_state(delta_q0);
+            size_t nsys = size_t(q0_flat.size());
 
             if (jac.is_none()){
                 throw py::value_error("Variational solvers require an exact jacobian for the original system");
-            } else if (size_t(py::len(dq0_flat)) != nsys){
+            } else if (size_t(dq0_flat.size()) != nsys){
                 throw py::value_error("The variational state vector delta_q0 must have the same size as q0");
             }
 

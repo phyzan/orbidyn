@@ -125,9 +125,9 @@ void PyConstSolver::show_state(int digits) const{
 py::object PyConstSolver::py_rhs(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
-        py::iterable q_flat = flatten_state(py_q);
+        py::array q_flat = flatten_state(py_q);
         Array1D<T> tmp(2*nsys);
-        if (size_t(py::len(q_flat)) != nsys){
+        if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
         pass_values(tmp.data()+nsys, q_flat, nsys);
@@ -141,8 +141,8 @@ py::object PyConstSolver::py_jac(const py::object& t, const py::iterable& py_q) 
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
         Array2D<T> jac(nsys, nsys);
-        py::iterable q_flat = flatten_state(py_q);
-        if (size_t(py::len(q_flat)) != nsys){
+        py::array q_flat = flatten_state(py_q);
+        if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
         pass_values(q.data(), q_flat, nsys);
@@ -159,9 +159,9 @@ py::object PyConstSolver::py_jac(const py::object& t, const py::iterable& py_q) 
 py::tuple PyConstSolver::timeit_rhs(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
-        py::iterable q_flat = flatten_state(py_q);
+        py::array q_flat = flatten_state(py_q);
         Array1D<T> tmp(2*nsys);
-        if (size_t(py::len(q_flat)) != nsys){
+        if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
         pass_values(tmp.data()+nsys, q_flat, nsys);
@@ -179,8 +179,8 @@ py::tuple PyConstSolver::timeit_jac(const py::object& t, const py::iterable& py_
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
         Array2D<T> jac(nsys, nsys);
-        py::iterable q_flat = flatten_state(py_q);
-        if (size_t(py::len(q_flat)) != nsys){
+        py::array q_flat = flatten_state(py_q);
+        if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
         pass_values(q.data(), q_flat, nsys);

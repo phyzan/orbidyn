@@ -41,7 +41,7 @@ void PyODE::init_scalar_type(){
 
 py::object PyODE::call_Rhs(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_ODE_VARIANT(
-        std::vector<T> q = to_vector<T>(py_q);
+        std::vector<T> q = to_vector<T>(flatten_state(py_q));
         if (size_t(q.size()) != ode_ptr->nsys()){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
@@ -53,7 +53,7 @@ py::object PyODE::call_Rhs(const py::object& t, const py::iterable& py_q) const{
 
 py::object PyODE::call_Jac(const py::object& t, const py::iterable& py_q) const{
     return ORBIDYN_VISIT_ODE_VARIANT(
-        std::vector<T> q = to_vector<T>(py_q);
+        std::vector<T> q = to_vector<T>(flatten_state(py_q));
         if (size_t(q.size()) != ode_ptr->nsys()){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
