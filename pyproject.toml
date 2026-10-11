@@ -25,10 +25,13 @@ dev = ["pytest>=7.0"]
 [tool.scikit-build]
 cmake.source-dir = "."
 cmake.build-type = "Release"
-# Keyed by wheel tag so building several interpreters in a row (as cibuildwheel does)
-# never reuses a CMakeCache that pinned a different Python_EXECUTABLE.
-build-dir = "build/{wheel_tag}"
+
+build-dir = "build"
 wheel.packages = ["python/orbidyn"]
+
+[[tool.scikit-build.overrides]]
+if.env.CIBUILDWHEEL = true
+build-dir = "build/{wheel_tag}"
 
 [tool.cibuildwheel]
 build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
@@ -41,5 +44,6 @@ test-command = "python -c \"import orbidyn; print(orbidyn.__file__)\""
 [tool.cibuildwheel.linux]
 # AlmaLinux 8 base: GCC 14 devtoolset, glibc 2.28 - needed for the C++20 sources.
 manylinux-x86_64-image = "manylinux_2_28"
-before-all = "dnf install -y mpfr-devel gmp-devel"
+# qhull-devel (with libqhull_r) is in AlmaLinux 8's PowerTools repository, off by default.
+before-all = "dnf install -y --enablerepo=powertools mpfr-devel gmp-devel qhull-devel"
 environment = { CMAKE_BUILD_PARALLEL_LEVEL = "4" }
