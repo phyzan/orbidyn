@@ -120,7 +120,7 @@ bool init_ode_data(Callable&& action, const py::object& py_rhs, const py::object
 template<typename Callable>
 void py_advance_all_general(py::object& list, Callable&& func, int threads, bool display_progress){
     // Separate lists for each numeric type
-    std::vector<integrator_t*> array;
+    std::vector<PySolver*> array;
 
     // Iterate through the list and identify each PySolver type
     for (const py::handle& item : list) {
@@ -131,7 +131,7 @@ void py_advance_all_general(py::object& list, Callable&& func, int threads, bool
             if (!pysolver.is_lowlevel) {
                 throw py::value_error("All solvers in advance_all must use only compiled functions, and no pure python functions");
             }
-            array.push_back(&pysolver.integrator);
+            array.push_back(&pysolver);
         } catch (const py::cast_error&) {
             // If cast failed, throw an error
             throw py::value_error("List item is not a recognized PySolver object type.");
@@ -148,8 +148,9 @@ void py_advance_all_general(py::object& list, Callable&& func, int threads, bool
         threads, array.size(),
         [&](size_t i){
             std::visit([&]<typename T>(pbox::owner<OdeRichSolver<T>>& solver) NDSPAN_LAMBDA_INLINE {
+                [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*array[i]);
                 func(*solver);
-            }, *array[i]);
+            }, array[i]->integrator);
 
             if (display_progress){
                 std::lock_guard<std::mutex> lock(progress_mutex);

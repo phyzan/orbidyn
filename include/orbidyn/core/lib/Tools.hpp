@@ -62,10 +62,9 @@ inline void bind_mpreal_prec(py::module_& m){
 // Runs action(0), ..., action(range-1) on `threads` threads (all hardware threads if <= 0).
 //
 // The threads are created afresh on every call rather than kept in a pool (as OpenMP does).
-// A pooled thread keeps the scratch buffers that every module's code created on it, at the
-// precision of the call that created them, and set_mpreal_prec can only resize those of the
-// module it belongs to. A fresh thread has none yet: once its MPFR precision is set below,
-// whichever module's code it runs creates its buffers at that precision.
+// A pooled thread would keep mpreal state (MPFR's default precision, lazex's scratch buffers)
+// from earlier calls; a fresh one starts clean. `action` applies each object's own precision
+// (MprealPrecScope), and the thread exits afterwards.
 //
 // An exception must not escape a thread (that is std::terminate), so the first one thrown by
 // `action` is kept, the remaining iterations are skipped, and it is rethrown here once every
@@ -78,14 +77,12 @@ inline void call_multithreaded_operation(int threads, size_t range, Callable&& a
     const size_t hardware = std::max(std::thread::hardware_concurrency(), 1u);
     const size_t thread_count = std::min(threads > 0 ? size_t(threads) : hardware, range);
 
-    const mpfr_prec_t prec = mpfr::mpreal::get_default_prec();
     std::atomic<size_t> next{0};
     std::atomic<bool> error_flag{false};
     std::exception_ptr thread_exception = nullptr;
     std::mutex exception_mutex;
 
     auto worker = [&](){
-        ::ode::crafted::set_mpreal_prec(prec);
         for (size_t i = next++; i < range && !error_flag.load(); i = next++){
             try {
                 action(i);
@@ -127,7 +124,58 @@ struct DtypeDispatcher{
 
     DtypeDispatcher(ScalarType dtype_);
 
+    // Makes mpreal_t work on this object run at its own precision, on the calling thread.
+    void apply_mpreal_prec() const;
+
     ScalarType scalar_type;
+
+    // The precision an object computes at is the one it was created with: MPFR's default on the
+    // creating thread at that time. MPFR's default precision and lazex's scratch buffers are both
+    // per thread, so it is re-applied on whichever thread later works on the object.
+    mpfr_prec_t mpreal_prec;
+
+    // set_mpreal_prec of the extension module that created the object. Each module links its own
+    // copy of odecraft, with its own scratch buffers, and the object's solver code runs from that
+    // module's copy: those buffers are the ones its precision has to reach.
+    void (*mpreal_sync)(mpfr_prec_t);
+
+private:
+    void init_mpreal_prec();
+};
+
+
+inline void DtypeDispatcher::apply_mpreal_prec() const{
+    ::ode::crafted::set_mpreal_prec(this->mpreal_prec); // the calling module's buffers
+    if (this->mpreal_sync != &::ode::crafted::set_mpreal_prec){
+        this->mpreal_sync(this->mpreal_prec);           // the creating module's buffers
+    }
+}
+
+
+// Scope in which mpreal_t work on `obj` runs at obj's precision. On exit, the thread's default
+// precision goes back to what it was, so working on an object never changes the precision that
+// later objects are created with. A no-op for every other scalar type.
+template<typename T>
+struct MprealPrecScope{
+    explicit MprealPrecScope(const DtypeDispatcher&) {}
+};
+
+template<>
+struct MprealPrecScope<mpreal_t>{
+
+    explicit MprealPrecScope(const DtypeDispatcher& obj) : previous_(mpfr_get_default_prec()) {
+        obj.apply_mpreal_prec();
+    }
+
+    ~MprealPrecScope(){
+        mpfr_set_default_prec(previous_);
+    }
+
+    MprealPrecScope(const MprealPrecScope&) = delete;
+    MprealPrecScope& operator=(const MprealPrecScope&) = delete;
+
+private:
+    mpfr_prec_t previous_;
 };
 
 

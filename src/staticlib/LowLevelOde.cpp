@@ -236,7 +236,7 @@ void py_integrate_all(py::object& list, double interval, const py::object& t_eva
     auto options = to_Options(event_options);
 
     // Iterate through the list and identify each PyODE type
-    std::vector<ode_t*> array;
+    std::vector<PyODE*> array;
     array.reserve(py::len(list));
     for (const py::handle& item : list) {
         try {
@@ -244,7 +244,7 @@ void py_integrate_all(py::object& list, double interval, const py::object& t_eva
             if (!pyode.is_lowlevel) {
                 throw py::value_error("All ODE's in integrate_all must use only compiled functions, and no pure python functions");
             } else {
-                array.push_back(&pyode.ode);
+                array.push_back(&pyode);
                 if ((!step_seq.contains(pyode.scalar_type)) && !t_eval.is_none()){
                     dispatch_scalar_type<void>(pyode.scalar_type, [&]<typename T>(){
                         step_seq[pyode.scalar_type] = to_vector<T>(t_eval.cast<py::iterable>());
@@ -271,11 +271,12 @@ void py_integrate_all(py::object& list, double interval, const py::object& t_eva
     call_multithreaded_operation(
         threads, array.size(),
         [&](size_t i){
-            ScalarType scalar_type = visit_scalar_type(*array[i]);
+            ScalarType scalar_type = array[i]->scalar_type;
             dispatch_scalar_type<void>(
                 scalar_type,
                 [&]<typename T>(){
-                    owner<ODE<T>>& ode_ref = std::get<pbox::owner<ODE<T>>>(*array[i]);
+                    [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*array[i]);
+                    owner<ODE<T>>& ode_ref = std::get<pbox::owner<ODE<T>>>(array[i]->ode);
                     if (t_eval_is_none){
                         ode_ref->integrate(
                             nullptr,

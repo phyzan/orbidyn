@@ -4,6 +4,7 @@
 
 #define ORBIDYN_VISIT_ODERESULT_VARIANT(...) \
     std::visit([&]<typename T>(const pbox::owner<OdeResult<T>>& hist){ \
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this); \
         __VA_ARGS__ \
     }, this->history); 
 

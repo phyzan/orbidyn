@@ -7,11 +7,13 @@
 
 #define ORBIDYN_VISIT_ODE_VARIANT(...) \
     std::visit([&]<typename T>(const pbox::owner<ODE<T>>& ode_ptr){ \
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this); \
         __VA_ARGS__ \
     }, this->ode);
 
 #define ORBIDYN_MODIFY_ODE_VARIANT(...) \
     std::visit([&]<typename T>(pbox::owner<ODE<T>>& ode_ptr){ \
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this); \
         __VA_ARGS__ \
     }, this->ode);
 
