@@ -67,13 +67,18 @@ set(LAZEX_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for mpreal arithmetic
 # via add_subdirectory, on the assumption that the parent only wants the header-only `ode`.
 set(ODECRAFT_BUILD_CRAFTED ON CACHE BOOL "" FORCE)
 
+# Rhs, Jac and event functions given from Python raise Python exceptions. Without this, odecraft
+# calls them noexcept, and an exception raised in one would terminate the interpreter instead of
+# propagating back to the caller.
+set(ODECRAFT_RHS_THROWS ON CACHE BOOL "" FORCE)
+
 
 set(ODECRAFT_USE_LAZY_MPREAL OFF CACHE BOOL
     "Compile ode::crafted's mpreal_t as lazex::LazyType<mpfr::mpreal> instead of plain mpfr::mpreal")
 add_subdirectory(external/odecraft)
 
 # Enabled only after the vendored subdirectories above, so compile_commands.json covers
-# orbidyn's own targets without being swamped by pybind11/odecraft/qhull's internal ones
+# orbidyn's own targets without being swamped by pybind11/odecraft's internal ones
 # (CMAKE_EXPORT_COMPILE_COMMANDS is a plain variable: a subdirectory only inherits it if
 # it was already ON when add_subdirectory() was called).
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -86,7 +91,7 @@ if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
          "${CMAKE_SOURCE_DIR}/compile_commands.json" SYMBOLIC)
 endif()
 
-find_package(OpenMP)
+find_package(Threads REQUIRED)
 
 #===========================================================================================
 #                           orbidyn glue libraries (python/pyode bindings on top of odecraft)
@@ -99,9 +104,8 @@ target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazex::mpfr py
 target_compile_definitions(orbidyn_headers INTERFACE PYBIND11_DETAILED_ERROR_MESSAGES)
 target_compile_options(orbidyn_headers INTERFACE ${ORBIDYN_COMPILE_OPTIONS})
 target_link_options(orbidyn_headers INTERFACE ${ORBIDYN_LINK_OPTIONS})
-if(OpenMP_FOUND)
-    target_link_libraries(orbidyn_headers INTERFACE OpenMP::OpenMP_CXX)
-endif()
+# Parallel loops (advance_all, integrate_all) run on std::thread; see call_multithreaded_operation.
+target_link_libraries(orbidyn_headers INTERFACE Threads::Threads)
 
 function(orbidyn_static_lib name)
     add_library(orbidyn_${name} STATIC ${ARGN})
@@ -243,8 +247,4 @@ install(DIRECTORY external/odecraft/external/ndspan/include/
 install(DIRECTORY external/odecraft/external/polybox/include/
     DESTINATION orbidyn/include
     FILES_MATCHING PATTERN "*.hpp"
-)
-install(DIRECTORY external/odecraft/external/qhull/src/libqhull_r/
-    DESTINATION orbidyn/include/libqhull_r
-    FILES_MATCHING PATTERN "*.h"
 )

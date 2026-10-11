@@ -525,16 +525,12 @@ class OdeSolver(OdeSolverView):
         """
         ...
 
-    def kill(self, reason: str)->None:
+    def kill(self)->None:
         """
         Immediately terminates the solver, marking it as dead.
         No further advancement is possible after this call, unless
         the solver is reset.
-
-        Parameters
-        ----------
-        reason : str
-            Message to store as the solver's status.
+        Its status then reports that it was killed by the user.
         """
         ...
 
@@ -1049,42 +1045,6 @@ def advance_all_to_event(solvers: Iterable[OdeSolver], events: str | Iterable[st
         Same as advance_all.
     display_progress : bool, optional
         Same as advance_all.
-    """
-    ...
-
-def set_mpreal_prec(bits: int)->None:
-    """
-    Set the global precision for MPFR arbitrary-precision arithmetic.
-
-    Sets the bit precision used by the "mpreal" scalar type (arbitrary precision
-    floating-point numbers via MPFR library). This precision applies to all new
-    mpreal objects created after this call.
-
-    The default precision is 53 bits, which is equivalent to IEEE 754 double
-    precision.
-
-    Parameters
-    ----------
-    bits : int
-        Number of bits of precision. Examples:
-        - 53 (default): Equivalent to double precision (Python's float)
-        - 128: ~38 decimal digits
-        - 256: ~77 decimal digits
-        - 1024: ~308 decimal digits
-
-    Notes
-    -----
-    Higher precision costs more memory and computation time. Set only as high as
-    needed for your application.
-
-    This is a global setting affecting the entire process. All new mpreal objects
-    created after calling this function will use the specified precision.
-
-    Examples
-    --------
-    >>> set_mpreal_prec(128)  # Set to 128-bit precision
-    >>> ode = LowLevelODE(f, 0, q0, scalar_type="mpreal")
-    >>> # Subsequent ODEs will use 128-bit precision
     """
     ...
 

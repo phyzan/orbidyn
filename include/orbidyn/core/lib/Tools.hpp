@@ -3,6 +3,12 @@
 
 
 
+#include <algorithm>
+#include <atomic>
+#include <exception>
+#include <mutex>
+#include <thread>
+#include <vector>
 #include "../Dispatcher.hpp"
 
 namespace ode::python {
@@ -41,6 +47,77 @@ inline ScalarType visit_scalar_type(const std::variant<pbox::owner<Class<T>>...>
     return std::visit([]<typename A>(const pbox::owner<Class<A>>&){
         return getScalarType<A>();
     }, obj);
+}
+
+
+// Every extension module links its own copy of odecraft, and with it its own lazex scratch
+// buffers for mpreal_t, which ode::crafted::set_mpreal_prec resizes only for the module it is
+// called from. So each module exposes its own copy as _set_mpreal_prec, and
+// orbidyn.set_mpreal_prec (__init__.py) calls all of them.
+inline void bind_mpreal_prec(py::module_& m){
+    m.def("_set_mpreal_prec", &::ode::crafted::set_mpreal_prec, py::arg("bits"));
+}
+
+
+// Runs action(0), ..., action(range-1) on `threads` threads (all hardware threads if <= 0).
+//
+// The threads are created afresh on every call rather than kept in a pool (as OpenMP does).
+// A pooled thread keeps the scratch buffers that every module's code created on it, at the
+// precision of the call that created them, and set_mpreal_prec can only resize those of the
+// module it belongs to. A fresh thread has none yet: once its MPFR precision is set below,
+// whichever module's code it runs creates its buffers at that precision.
+//
+// An exception must not escape a thread (that is std::terminate), so the first one thrown by
+// `action` is kept, the remaining iterations are skipped, and it is rethrown here once every
+// thread has joined.
+template<typename Callable>
+inline void call_multithreaded_operation(int threads, size_t range, Callable&& action){
+    if (range == 0){
+        return;
+    }
+    const size_t hardware = std::max(std::thread::hardware_concurrency(), 1u);
+    const size_t thread_count = std::min(threads > 0 ? size_t(threads) : hardware, range);
+
+    const mpfr_prec_t prec = mpfr::mpreal::get_default_prec();
+    std::atomic<size_t> next{0};
+    std::atomic<bool> error_flag{false};
+    std::exception_ptr thread_exception = nullptr;
+    std::mutex exception_mutex;
+
+    auto worker = [&](){
+        ::ode::crafted::set_mpreal_prec(prec);
+        for (size_t i = next++; i < range && !error_flag.load(); i = next++){
+            try {
+                action(i);
+            } catch (...) {
+                std::lock_guard<std::mutex> lock(exception_mutex);
+                if (!error_flag.load()) {
+                    thread_exception = std::current_exception();
+                    error_flag.store(true);
+                }
+            }
+        }
+        // MPFR keeps per-thread caches (e.g. constants used inside exp/log) until asked to free
+        // them. Only this thread's own: the shared ones may still be in use by the others.
+        mpfr_free_cache2(MPFR_FREE_LOCAL_CACHE);
+    };
+
+    {
+        std::vector<std::jthread> pool;
+        pool.reserve(thread_count);
+        try {
+            for (size_t k = 0; k < thread_count; k++){
+                pool.emplace_back(worker);
+            }
+        } catch (...) {
+            error_flag.store(true); // the threads already started stop at their next iteration,
+            throw;                  // and ~jthread joins them
+        }
+    } // ~jthread joins every thread
+
+    if (thread_exception) {
+        std::rethrow_exception(thread_exception);
+    }
 }
 
 

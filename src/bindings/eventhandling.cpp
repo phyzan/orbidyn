@@ -47,5 +47,7 @@ py::class_<PyPerEvent, PyEvent>(m, "PeriodicEvent")
         py::arg("__Nargs")=0)
     .def_property_readonly("period", &PyPerEvent::period);
 
+bind_mpreal_prec(m);
+
 
 } // PYBIND11_MODULE(eventhandling, m)

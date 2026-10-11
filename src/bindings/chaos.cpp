@@ -56,6 +56,8 @@ py::class_<PyVarODE, PyODE>(m, "VariationalLowLevelODE")
     .def_property_readonly("kicks", &PyVarODE::py_kicks)
     .def("copy", &PyVarODE::copy);
 
+bind_mpreal_prec(m);
+
     
 }
 

@@ -77,7 +77,7 @@ py::class_<PySolver, PyConstSolver>(m, "OdeSolver")
     .def("advance_until", &PySolver::advance_until, py::arg("t"), py::arg("observer")=py::none(), py::arg("extra_steps")=py::none())
     .def("reset", &PySolver::reset)
     .def("set_ics", &PySolver::set_ics, py::arg("t0"), py::arg("q0"), py::arg("stepsize")=0, py::arg("direction")=0)
-    .def("kill", &PySolver::kill, py::arg("reason"));
+    .def("kill", &PySolver::kill);
 
 // ================= Solver with exposed constructor to override in Python ==========================
 py::class_<AbstractIntegrator, PySolver>(m, "AbstractIntegrator")
@@ -111,10 +111,7 @@ m.def("advance_all", &py_advance_all, py::arg("solvers"), py::arg("t_goal"), py:
 
 m.def("advance_all_to_event", &py_advance_all_to_event, py::arg("solvers"), py::arg("events"), py::arg("tmax"), py::arg("threads")=-1, py::arg("display_progress")=false);
 
-m.def("set_mpreal_prec",
-    mpfr::mpreal::set_default_prec,
-    py::arg("bits"),
-    "Set the default MPFR precision (in bits) for mpfr::mpreal.")
-.def("mpreal_prec", &mpfr::mpreal::get_default_prec);
+bind_mpreal_prec(m);
+m.def("mpreal_prec", &mpfr::mpreal::get_default_prec);
 
 } // PYBIND11_MODULE(integrators, m)

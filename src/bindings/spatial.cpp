@@ -41,6 +41,8 @@ py::class_<ScatteredNdInterpolator, VirtualNdInterpolator>(m, "ScatteredNdInterp
     .def_property_readonly("values", &PyScatteredInterp::py_values)
     .def_property_readonly("tri", &PyScatteredInterp::py_delaunay_obj);
 
+bind_mpreal_prec(m);
+
 
 
 

@@ -25,27 +25,27 @@ The library aims to provide a clean, familiar interface similar to [SciPy](https
 
 ## Requirements
 
-A C++20 compiler, CMake 3.16+, and the MPFR/GMP libraries are required.
+A C++20 compiler, CMake 3.16+, and the MPFR/GMP and qhull libraries are required.
 
 **Ubuntu/Debian:**
 ```bash
 sudo apt install build-essential
 sudo apt install cmake
-sudo apt install libmpfr-dev libgmp-dev
+sudo apt install libmpfr-dev libgmp-dev libqhull-dev
 ```
 
 **macOS:**
 ```bash
 xcode-select --install
 brew install cmake
-brew install mpfr gmp
+brew install mpfr gmp qhull
 ```
 
 **Windows (MSYS2/MinGW):**
 ```bash
 pacman -S mingw-w64-x86_64-toolchain
 pacman -S mingw-w64-x86_64-cmake
-pacman -S mingw-w64-x86_64-mpfr mingw-w64-x86_64-gmp
+pacman -S mingw-w64-x86_64-mpfr mingw-w64-x86_64-gmp mingw-w64-x86_64-qhull
 ```
 
 ## Getting **OrbiDyn**

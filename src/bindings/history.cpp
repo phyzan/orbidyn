@@ -23,4 +23,6 @@ py::class_<PyOdeSolution, PyOdeResult>(m, "OdeSolution")
             return self(t);
         }, py::arg("t"));
 
+bind_mpreal_prec(m);
+
 } // PYBIND11_MODULE(history, m)

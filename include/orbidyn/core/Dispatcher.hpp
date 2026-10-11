@@ -3,7 +3,7 @@
 
 
 #include <map>
-#include "Crafted.hpp"
+#include "Crafted.hpp" // IWYU pragma: keep
 #include "pycast/pycast.hpp" // IWYU pragma: keep
 
 
