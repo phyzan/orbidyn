@@ -46,8 +46,7 @@ using crafted::Stepper,
       crafted::StepResult,
       crafted::JacPolicy,
       crafted::RootPolicy,
-      crafted::Clock,
-      crafted::State;
+      crafted::Clock;
 
 // ---------------------------------------------------------------------------
 // Solvers

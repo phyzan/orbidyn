@@ -80,5 +80,6 @@ py::class_<ScatteredVectorField, VirtualVectorField, ScatteredNdInterpolator>(m,
         py::arg("tri"),
         py::arg("values"));
 
+bind_mpreal_prec(m);
 
 } // namespace ode

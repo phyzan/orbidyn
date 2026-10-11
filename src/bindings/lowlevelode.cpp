@@ -58,4 +58,6 @@ py::class_<PyODE>(m, "LowLevelODE")
 
     m.def("integrate_all", &py_integrate_all, py::arg("ode_array"), py::arg("interval"), py::arg("t_eval")=py::none(), py::arg("event_options")=py::tuple(), py::arg("threads")=-1, py::arg("display_progress")=false);
 
+    bind_mpreal_prec(m);
+
 } // PYBIND11_MODULE(lowlevelode, m)

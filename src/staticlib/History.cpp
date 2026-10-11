@@ -44,7 +44,7 @@ py::tuple PyOdeResult::event_data(const py::str& event) const{
 
 py::bool_ PyOdeResult::diverges() const{
     return ORBIDYN_VISIT_ODERESULT_VARIANT(
-        return py::cast(hist->diverges());
+        return py::cast(hist->status() == StepperStatus::Diverges);
     )
 }
 

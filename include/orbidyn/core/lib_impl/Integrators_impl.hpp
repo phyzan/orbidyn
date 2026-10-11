@@ -1,7 +1,7 @@
 #ifndef ORBIDYN_INTEGRATORS_IMPL_HPP
 #define ORBIDYN_INTEGRATORS_IMPL_HPP
 
-#include <omp.h>
+#include <mutex>
 #include "../lib/Integrators.hpp"
 #include "../lib/EventHandling.hpp"
 #include "../pycast/pycast.hpp" // IWYU pragma: keep
@@ -138,44 +138,26 @@ void py_advance_all_general(py::object& list, Callable&& func, int threads, bool
         }
     }
 
-    const int num = (threads <= 0) ? omp_get_max_threads() : threads;
     int tot = 0;
     const int target = int(array.size());
+    std::mutex progress_mutex;
     Clock clock;
     clock.start();
 
-    std::exception_ptr thread_exception = nullptr;
-    std::atomic<bool> error_flag{false};
-
-    #pragma omp parallel for schedule(dynamic) num_threads(num)
-    for (size_t i=0; i<array.size(); i++){
-        if (error_flag.load()){ continue;}
-        try {
+    call_multithreaded_operation(
+        threads, array.size(),
+        [&](size_t i){
             std::visit([&]<typename T>(pbox::owner<OdeRichSolver<T>>& solver) NDSPAN_LAMBDA_INLINE {
                 func(*solver);
             }, *array[i]);
-        } catch (...) {
-            #pragma omp critical
-            {
-                if (!error_flag.load()) {
-                    thread_exception = std::current_exception();
-                    error_flag.store(true);
-                }
-            }
-            continue;
-        }
 
-        #pragma omp critical
-        {
             if (display_progress){
+                std::lock_guard<std::mutex> lock(progress_mutex);
                 show_progress(++tot, target, clock);
             }
         }
-    }
+    );
 
-    if (thread_exception) {
-        std::rethrow_exception(thread_exception);
-    }
     std::cout << std::endl << "Parallel integration completed in: " << clock.message() << std::endl;
 
 }

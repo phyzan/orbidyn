@@ -39,13 +39,13 @@ void PyConstSolver::init_scalar_type(){
 
 py::object PyConstSolver::t0() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_ics().t());
+        return py::cast(solver->get_ics_time());
     )
 }
 
 py::object PyConstSolver::q0() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(as_state<T>(solver->get_ics().vector(), solver->get_nsys(), this->shape));
+        return py::cast(as_state<T>(solver->get_ics_vector().data(), solver->get_nsys(), this->shape));
     )
 }
 
@@ -69,7 +69,9 @@ py::object PyConstSolver::t_old() const{
 
 py::object PyConstSolver::q() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(as_state<T>(solver->get_vector().data(), solver->get_nsys(), this->shape));
+        std::vector<T> q(solver->get_nsys());
+        solver->get_current_vector(q.data());
+        return py::cast(as_state<T>(q.data(), solver->get_nsys(), this->shape));
     )
 }
 
@@ -87,13 +89,13 @@ py::object PyConstSolver::stepsize() const{
 
 py::object PyConstSolver::diverges() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_diverges());
+        return py::cast(solver->get_status() == StepperStatus::Diverges);
     )
 }
 
 py::object PyConstSolver::is_dead() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_is_dead());
+        return py::cast(!solver->get_is_running());
     )
 }
 
@@ -200,7 +202,7 @@ py::tuple PyConstSolver::timeit_jac(const py::object& t, const py::iterable& py_
 
 py::str PyConstSolver::status() const{
     return ORBIDYN_VISIT_SOLVER_VARIANT(
-        return py::cast(solver->get_status());
+        return py::str(solver->get_message());
     )
 }
 
@@ -359,7 +361,7 @@ bool PySolver::set_ics(const py::object& t0, const py::iterable& py_q0, const py
     )
 }
 
-void PySolver::kill(std::string reason) { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(std::move(reason)); ) }
+void PySolver::kill() { ORBIDYN_MODIFY_SOLVER_VARIANT( solver->do_kill(); ) }
 
 //===========================================================================================
 //                                      Additional functions

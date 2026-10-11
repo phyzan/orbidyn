@@ -259,49 +259,52 @@ void py_integrate_all(py::object& list, double interval, const py::object& t_eva
     }
 
 
-    const int num = (threads <= 0) ? omp_get_max_threads() : threads;
     int tot = 0;
     const int target = int(array.size());
+    std::mutex progress_mutex;
     Clock clock;
-    clock.start();   
-    
+    clock.start();
+
 
     const bool t_eval_is_none = t_eval.is_none();
-    #pragma omp parallel for schedule(dynamic) num_threads(num)
-    for (size_t i=0; i<array.size(); i++){
 
-        ScalarType scalar_type = visit_scalar_type(*array[i]);
-        dispatch_scalar_type<void>(
-            scalar_type,
-            [&]<typename T>(){
-                owner<ODE<T>>& ode_ref = std::get<pbox::owner<ODE<T>>>(*array[i]);
-                if (t_eval_is_none){
-                    ode_ref->integrate(
-                        nullptr,
-                        T(interval),
-                        options
-                    );
-                } else {
-                    const std::vector<T>& steps = std::get<std::vector<T>>(step_seq[scalar_type]);
-                    ode_ref->integrate(
-                        nullptr,
-                        T(interval),
-                        options,
-                        0,
-                        nullptr,
-                        steps
-                    );
+    call_multithreaded_operation(
+        threads, array.size(),
+        [&](size_t i){
+            ScalarType scalar_type = visit_scalar_type(*array[i]);
+            dispatch_scalar_type<void>(
+                scalar_type,
+                [&]<typename T>(){
+                    owner<ODE<T>>& ode_ref = std::get<pbox::owner<ODE<T>>>(*array[i]);
+                    if (t_eval_is_none){
+                        ode_ref->integrate(
+                            nullptr,
+                            T(interval),
+                            options
+                        );
+                    } else {
+                        // Using step_seq.at() because the [] operator
+                        // can potentially append a key in the map
+                        // even though in this case it already exists for sure
+                        const std::vector<T>& steps = std::get<std::vector<T>>(step_seq.at(scalar_type));
+                        ode_ref->integrate(
+                            nullptr,
+                            T(interval),
+                            options,
+                            0,
+                            nullptr,
+                            steps
+                        );
+                    }
                 }
-            }
-        );
+            );
 
-        #pragma omp critical
-        {
             if (display_progress){
+                std::lock_guard<std::mutex> lock(progress_mutex);
                 show_progress(++tot, target, clock);
             }
         }
-    }
+    );
 
     std::cout << std::endl << "Parallel integration completed in: " << clock.message() << std::endl;
 }
