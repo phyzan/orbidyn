@@ -7,11 +7,13 @@
 
 #define ORBIDYN_VISIT_SOLVER_VARIANT(...) \
     std::visit([&]<typename T>(const pbox::owner<stepper<T>>& solver){ \
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this); \
         __VA_ARGS__ \
     }, this->integrator);
 
 #define ORBIDYN_MODIFY_SOLVER_VARIANT(...) \
     std::visit([&]<typename T>(pbox::owner<stepper<T>>& solver){ \
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this); \
         __VA_ARGS__ \
     }, this->integrator);
 

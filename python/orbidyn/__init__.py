@@ -41,9 +41,11 @@ def set_mpreal_prec(bits: int) -> None:
     Higher precision costs more memory and computation time. Set only as high as
     needed for your application.
 
-    As in MPFR itself, the precision belongs to the calling thread. The parallel
-    functions (advance_all, advance_all_to_event, integrate_all) carry it over to
-    the threads they start.
+    Every mpreal object keeps the precision it was created with, whichever thread
+    later works on it (including the threads of advance_all, advance_all_to_event
+    and integrate_all), so changing the precision does not affect existing objects.
+    As in MPFR itself, the setting belongs to the calling thread: objects created
+    from another thread use that thread's setting.
 
     Examples
     --------

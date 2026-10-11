@@ -27,6 +27,7 @@ PyFuncWrapper::PyFuncWrapper(const py::capsule& obj, py::ssize_t py_nsys, const 
 py::object PyFuncWrapper::call(const py::object& t, const py::iterable& py_q, const py::args& py_args) const{
 
     return std::visit([&]<typename T>(const raw_pyrhs_t<T>& rhs){
+        [[maybe_unused]] const MprealPrecScope<T> mpreal_scope_(*this);
         // TODO : minimize memory allocations
         std::vector<T> q = to_vector<T>(flatten_state(py_q));
         if (size_t(q.size()) != n_sys || py_args.size() != n_args){
@@ -46,9 +47,23 @@ py::object PyFuncWrapper::call(const py::object& t, const py::iterable& py_q, co
 
 DtypeDispatcher::DtypeDispatcher(const std::string& dtype_){
     this->scalar_type = getScalarTypefromStr(dtype_);
+    this->init_mpreal_prec();
 }
 
-DtypeDispatcher::DtypeDispatcher(ScalarType dtype_) : scalar_type(dtype_) {}
+DtypeDispatcher::DtypeDispatcher(ScalarType dtype_) : scalar_type(dtype_) {
+    this->init_mpreal_prec();
+}
+
+void DtypeDispatcher::init_mpreal_prec(){
+    this->mpreal_prec = mpfr_get_default_prec();
+    // Taken here, in this module's own copy of the static library, so it is this module's copy.
+    this->mpreal_sync = &::ode::crafted::set_mpreal_prec;
+    if (this->scalar_type == ScalarType::MPReal){
+        // The derived constructor computes with this module's buffers, which may still be sized
+        // for another precision.
+        this->apply_mpreal_prec();
+    }
+}
 
 
 //===========================================================================================
