@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 3.15...3.29)
 project(orbidyn LANGUAGES CXX)
 
+# The static libraries below (and odecraft's) are made of -flto objects, which are only indexed when
+# archived through the compiler's wrapper (gcc-ar), which loads the matching LTO plugin. Plain ar
+# finds one on some systems only: elsewhere the objects go unindexed and the extension modules (and
+# JIT-compiled code linking orbidyn/lib) end up with undefined symbols.
+if(CMAKE_CXX_COMPILER_AR AND CMAKE_CXX_COMPILER_RANLIB)
+    set(CMAKE_AR ${CMAKE_CXX_COMPILER_AR})
+    set(CMAKE_RANLIB ${CMAKE_CXX_COMPILER_RANLIB})
+endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
