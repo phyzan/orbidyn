@@ -52,7 +52,8 @@ inline constexpr ScalarType getScalarType(){
     } else if constexpr (std::is_same_v<T, mpreal_t>) {
         return ScalarType::MPReal;
     } else {
-        static_assert(false, "Unsupported scalar type T");
+        // Always false but only fires if the branch is instantiated
+        static_assert(sizeof(T) == 0, "Unsupported scalar type T");
     }
 }
 
@@ -68,7 +69,8 @@ constexpr const char* getScalarTypeName() {
     } else if constexpr (std::is_same_v<T, mpreal_t>) {
         return "mpreal";
     } else {
-        static_assert(false, "Unsupported scalar type T");
+        // Always false but only fires if the branch is instantiated
+        static_assert(sizeof(T) == 0, "Unsupported scalar type T");
     }
 }
 

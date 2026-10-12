@@ -8,6 +8,7 @@
 #include <exception>
 #include <mutex>
 #include <thread>
+#include <variant>
 #include <vector>
 #include "../Dispatcher.hpp"
 
