@@ -62,7 +62,7 @@ PyScatteredField::PyScatteredField(std::nullptr_t, const PyDelaunay& tri, const 
 
 void PyVecField::check_coords(const CLS& self, const double* coords){
     if (!self.contains(coords)){
-        Array1D<double, 0> q(coords, self.ndim());
+        Array1D<double> q(coords, self.ndim());
         throw py::value_error("Coordinates " + py::repr(py::cast(q)).template cast<std::string>() + " are out of bounds");
     }
 }
@@ -161,9 +161,9 @@ py::object PyRegVecField::py_streamplot_data(const CLS& self, double max_length,
         throw py::value_error("Stepsize must be non-negative");
     }
 
-    std::vector<Array2D<double, 0, 0>> streamlines = self.streamplot_data(max_length, ds, size_t(density), rtol, atol, min_step, max_step.is_none() ? 0 : max_step.cast<double>(), stepsize, getIntegrator(method));
+    std::vector<CArray2D<double>> streamlines = self.streamplot_data(max_length, ds, size_t(density), rtol, atol, min_step, max_step.is_none() ? 0 : max_step.cast<double>(), stepsize, getIntegrator(method));
     py::list result;
-    for (const Array2D<double, 0, 0>& line : streamlines){
+    for (const CArray2D<double>& line : streamlines){
         result.append(py::cast(line));
     }
     return result;

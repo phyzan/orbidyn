@@ -142,7 +142,7 @@ py::object PyConstSolver::py_jac(const py::object& t, const py::iterable& py_q) 
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
-        Array2D<T> jac(nsys, nsys);
+        CArray2D<T> jac(nsys, nsys);
         py::array q_flat = flatten_state(py_q);
         if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");
@@ -180,7 +180,7 @@ py::tuple PyConstSolver::timeit_jac(const py::object& t, const py::iterable& py_
     return ORBIDYN_VISIT_SOLVER_VARIANT(
         size_t nsys = solver->get_nsys();
         Array1D<T> q(nsys);
-        Array2D<T> jac(nsys, nsys);
+        CArray2D<T> jac(nsys, nsys);
         py::array q_flat = flatten_state(py_q);
         if (size_t(q_flat.size()) != nsys){
             throw py::value_error("Invalid size of state array in call to rhs");

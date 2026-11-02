@@ -237,7 +237,7 @@ py::object PyDelaunay::py_get_simplex(const c_array_t& point) const{
     const int* simplex = tri_->get_simplex(simplex_idx);
 
     // Now get array of (ndim+1, ndim) containing the coordinates of the simplex vertices
-    Array2D<double, 0, Base::DIM_SPX> simplex_coords(tri_->ndim()+1, tri_->ndim());
+    CArray2D<double> simplex_coords(tri_->ndim()+1, tri_->ndim());
     const auto& points = tri_->get_points();
     for (int i=0; i<tri_->ndim()+1; i++){
         const double* vertex_coords = points.ptr(simplex[i], 0);
@@ -279,28 +279,28 @@ py::dict PyDelaunay::py_get_state() const{
 
 PyDelaunay PyDelaunay::py_set_state(const py::dict& state){
     try {
-        //Array2D<double, 0, NDIM>
+        // CArray2D<double>, (npoints, ndim)
         auto py_points = py::array_t<double, py::array::c_style | py::array::forcecast>(state["points"].cast<c_array_t>()); 
 
-        // Array2D<int, 0, Base::DIM_SPX>
+        // CArray2D<int>, (nsimplices, ndim+1)
         auto py_simplices = py::array_t<int, py::array::c_style | py::array::forcecast>(state["simplices"].cast<py::array_t<int>>());
 
-        // Array2D<int, 0, Base::DIM_SPX>
+        // CArray2D<int>, (nsimplices, ndim+1)
         auto py_neighbors = py::array_t<int, py::array::c_style | py::array::forcecast>(state["neighbors"].cast<py::array_t<int>>());
 
-        // Array2D<double, 0, NDIM>
+        // CArray2D<double>, (nsimplices, ndim)
         auto py_v0 = py::array_t<double, py::array::c_style | py::array::forcecast>(state["v0"].cast<c_array_t>());
 
-        //Array3D<double, 0, NDIM, NDIM>
+        // CArray3D, (nsimplices, ndim, ndim)
         auto py_invT = py::array_t<double, py::array::c_style | py::array::forcecast>(state["invT"].cast<c_array_t>());
 
         PyDelaunay obj(std::make_shared<DelaunayTri>());
         
-        View2D<double, 0, 0> points(py_points.data(), py_points.shape(), py_points.ndim());
-        View2D<int, 0, 0> simplices(py_simplices.data(), py_simplices.shape(), py_simplices.ndim());
-        View2D<int, 0, 0> neighbors(py_neighbors.data(), py_neighbors.shape(), py_neighbors.ndim());
-        View2D<double, 0, 0> v0(py_v0.data(), py_v0.shape(), py_v0.ndim());
-        View3D<double, 0, 0, 0> invT(py_invT.data(), py_invT.shape(), py_invT.ndim());
+        CView2D<double> points(py_points.data(), py_points.shape(), py_points.ndim());
+        CView2D<int> simplices(py_simplices.data(), py_simplices.shape(), py_simplices.ndim());
+        CView2D<int> neighbors(py_neighbors.data(), py_neighbors.shape(), py_neighbors.ndim());
+        CView2D<double> v0(py_v0.data(), py_v0.shape(), py_v0.ndim());
+        CView3D<double> invT(py_invT.data(), py_invT.shape(), py_invT.ndim());
         
         obj.tri_->set_state(points, simplices, neighbors, v0, invT);
         return obj;

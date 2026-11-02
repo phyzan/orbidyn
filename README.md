@@ -25,7 +25,7 @@ The library aims to provide a clean, familiar interface similar to [SciPy](https
 
 ## Requirements
 
-A C++20 compiler, CMake 3.16+, and the MPFR/GMP and qhull libraries are required.
+A C++20 compiler, CMake 3.24+, and the MPFR/GMP and qhull libraries are required.
 
 **Ubuntu/Debian:**
 ```bash

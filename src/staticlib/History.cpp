@@ -36,7 +36,7 @@ py::tuple PyOdeResult::event_data(const py::str& event) const{
         const OrbitData<T>& event_data = hist->event_data().data(event); //check if event exists
         auto shape = getShape<size_t>(py::ssize_t(event_data.size()), this->state_dims);
         View1D<T> t_view = event_data.t_view();
-        View2D<T, 0, 0> q_view = event_data.q_view();
+        CView2D<T> q_view = event_data.q_view();
         View<T> true_view(q_view.data(), shape.data(), shape.size());
         return py::make_tuple(py::cast(t_view), py::cast(true_view));
     )

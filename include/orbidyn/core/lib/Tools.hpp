@@ -24,6 +24,25 @@ using CArray = py::array_t<T, py::array::c_style | py::array::forcecast>;
 
 using c_array_t = CArray<double>;
 
+// ndspan arrays and views with runtime sizes, the only kind orbidyn needs
+template<typename T>
+using CArray2D = ndspan::CArray2D<T, 0, 0>;
+
+template<typename T>
+using FArray2D = ndspan::FArray2D<T, 0, 0>;
+
+template<typename T>
+using CView2D = ndspan::CView2D<T, 0, 0>;
+
+template<typename T>
+using FView2D = ndspan::FView2D<T, 0, 0>;
+
+template<typename T>
+using CView3D = ndspan::CView3D<T, 0, 0, 0>;
+
+template<typename T>
+using MutFView2D = ndspan::MutView<T, ndspan::Layout::F, 0, 0>;
+
 template<typename T>
 using raw_pyrhs_t = void(*)(T*, const T&, const T*, const T*); // f(t, q, args) -> array
 
@@ -289,7 +308,7 @@ inline void jac_pythonic(T* out, const T& t, const T* q, const pyshape_t& shape,
     CArray<T> pyres = rhs_func(t, py::array_t<T>(shape, q), *py_args);
     auto r = pyres.template unchecked<2>();
     py::ssize_t n = r.shape(0);
-    ndspan::MutView<T, ndspan::Layout::F, 0, 0> jm{out, n, n}; // Column-major layout
+    MutFView2D<T> jm{out, n, n}; // Column-major layout
     for (py::ssize_t j = 0; j < n; j++){
         for (py::ssize_t i = 0; i < n; i++) {
             jm(i, j) = r(i, j);
@@ -328,8 +347,8 @@ inline void jac_pythonic<mpreal_t>(mpreal_t* out, const mpreal_t& t, const mprea
         throw py::value_error("The jacobian of a system of size " + std::to_string(n) + " must have " + std::to_string(n*n) + " elements, not " + std::to_string(arr.size()));
     }
 
-    ndspan::MutView<mpreal_t, ndspan::Layout::F, 0, 0> jm{out, n, n}; // Column-major layout
-    ndspan::View2D<mpreal_t> r{arr.data(), n, n};
+    MutFView2D<mpreal_t> jm{out, n, n}; // Column-major layout
+    CView2D<mpreal_t> r{arr.data(), n, n};
     for (py::ssize_t j = 0; j < n; j++){
         for (py::ssize_t i = 0; i < n; i++) {
             jm(i, j) = r(i, j);

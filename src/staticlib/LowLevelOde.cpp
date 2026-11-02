@@ -57,7 +57,7 @@ py::object PyODE::call_Jac(const py::object& t, const py::iterable& py_q) const{
         if (size_t(q.size()) != ode_ptr->nsys()){
             throw py::value_error("Invalid size of state array in call to rhs");
         }
-        Array2D<T, 0, 0, ndspan::Allocation::Heap, ndspan::Layout::F> jac(ode_ptr->nsys(), ode_ptr->nsys());
+        FArray2D<T> jac(ode_ptr->nsys(), ode_ptr->nsys());
         ode_ptr->Jac(jac.data(), py::cast<T>(t), q.data(), nullptr);
         for (size_t i=0; i<ode_ptr->nsys(); i++){
             for (size_t j=i+1; j<ode_ptr->nsys(); j++){
@@ -66,7 +66,7 @@ py::object PyODE::call_Jac(const py::object& t, const py::iterable& py_q) const{
                 jac(j, i) = tmp;
             }
         }
-        return py::cast(View<T, ndspan::Layout::C, 0, 0>(jac.data(), ode_ptr->nsys(), ode_ptr->nsys()));
+        return py::cast(CView2D<T>(jac.data(), ode_ptr->nsys(), ode_ptr->nsys()));
     )
 }
 
@@ -148,7 +148,7 @@ py::tuple PyODE::event_data(const py::str& event) const{
         const OrbitData<T>& event_data = ode_ptr->event_data(event); //check if event exists
         auto shape = getShape<size_t>(py::ssize_t(event_data.size()), this->state_dims);
         View1D<T> t_view = event_data.t_view();
-        View2D<T, 0, 0> q_view = event_data.q_view();
+        CView2D<T> q_view = event_data.q_view();
         View<T> true_view(q_view.data(), shape.data(), shape.size());
         return py::make_tuple(py::cast(t_view), py::cast(true_view));
     )

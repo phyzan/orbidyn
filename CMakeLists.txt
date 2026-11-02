@@ -66,7 +66,6 @@ find_package(Python COMPONENTS Interpreter Development.Module REQUIRED)
 add_subdirectory(external/pybind11)
 
 set(ODECRAFT_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-set(LAZEX_ENABLE_MPREAL ON CACHE BOOL "" FORCE)
 # No FORCE: the rounding mode is the caller's to pick, and an empty value drops the macro
 # so mpreal reads mpfr::mpreal::get_default_rnd() at runtime instead.
 set(LAZEX_MPFR_RND "MPFR_RNDN" CACHE STRING "Rounding mode for mpreal arithmetic")
@@ -100,7 +99,7 @@ find_package(Threads REQUIRED)
 
 add_library(orbidyn_headers INTERFACE)
 target_include_directories(orbidyn_headers INTERFACE include)
-target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted lazex::mpfr pybind11::pybind11 Python::Module)
+target_link_libraries(orbidyn_headers INTERFACE odecraft::crafted pybind11::pybind11 Python::Module)
 
 target_compile_definitions(orbidyn_headers INTERFACE PYBIND11_DETAILED_ERROR_MESSAGES)
 target_compile_options(orbidyn_headers INTERFACE ${ORBIDYN_COMPILE_OPTIONS})
@@ -238,7 +237,7 @@ install(DIRECTORY external/odecraft/external/xdiff/external/lazex/include/
     DESTINATION orbidyn/include
     FILES_MATCHING PATTERN "*.hpp"
 )
-install(FILES external/odecraft/external/xdiff/external/lazex/external/mpreal/mpreal.h
+install(FILES external/odecraft/external/mpreal/mpreal.h
     DESTINATION orbidyn/include
 )
 install(DIRECTORY external/odecraft/external/ndspan/include/
